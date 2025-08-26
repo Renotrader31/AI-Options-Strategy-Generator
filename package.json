@@ -1,0 +1,19 @@
+{
+  "name": "options-strategy-fix",
+  "version": "1.0.0",
+  "description": "Fix for bull put spread strategy inconsistencies",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test tests/*.test.js",
+    "dev": "node --watch src/index.js",
+    "validate": "node src/validation/validateStrategies.js"
+  },
+  "keywords": ["options", "trading", "strategies", "bull-put-spread"],
+  "author": "GenSpark AI Developer",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
