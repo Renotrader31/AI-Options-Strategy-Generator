@@ -149,23 +149,7 @@
             font-weight: 600; 
             margin-left: 10px;
         }
-        .before-after { 
-            background: #fff3cd; 
-            border: 1px solid #ffeaa7; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 20px; 
-        }
-        .before { color: #d63384; text-decoration: line-through; }
-        .after { color: #28a745; font-weight: 600; }
-        .compact-before-after {
-            background: #f8f9fa;
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin: 10px 0;
-            font-size: 0.9rem;
-            border-left: 4px solid #28a745;
-        }
+
         .strategy-type {
             display: inline-block;
             background: #e9ecef;
@@ -215,7 +199,7 @@
                     const strike = Math.round(currentPrice * 1.03);
                     return `Buy ${strike} Call`;
                 },
-                beforeFix: "N/A - Simple Strategy",
+
                 aiReasoning: "🚀 DIRECTIONAL BULLISH! Maximum profit potential with limited risk"
             },
             
@@ -230,7 +214,7 @@
                     const strike = Math.round(currentPrice * 0.97);
                     return `Buy ${strike} Put`;
                 },
-                beforeFix: "N/A - Simple Strategy",
+
                 aiReasoning: "📉 DIRECTIONAL BEARISH! Profit from downward price movement"
             },
             
@@ -245,7 +229,7 @@
                     const strike = Math.round(currentPrice * 0.95);
                     return `Sell ${strike} Put (Cash-Secured)`;
                 },
-                beforeFix: "N/A - Simple Strategy",
+
                 aiReasoning: "💰 INCOME + ACQUISITION! Collect premium, potentially acquire stock"
             },
             
@@ -260,7 +244,7 @@
                     const strike = Math.round(currentPrice * 1.05);
                     return `Own 100 Shares + Sell ${strike} Call`;
                 },
-                beforeFix: "N/A - Simple Strategy",
+
                 aiReasoning: "📈 INCOME ENHANCEMENT! Generate additional income from stock holdings"
             },
 
@@ -277,7 +261,7 @@
                     const longStrike = Math.round(currentPrice * 0.90);
                     return `Sell ${shortStrike} Put + Buy ${longStrike} Put`;
                 },
-                beforeFix: "Buy 180 Call", // The original bug!
+
                 aiReasoning: "💰 INCOME PLAY! Sell puts to collect premium with upward momentum"
             },
             
@@ -293,7 +277,7 @@
                     const shortStrike = Math.round(currentPrice * 1.08);
                     return `Buy ${longStrike} Call + Sell ${shortStrike} Call`;
                 },
-                beforeFix: "Sell 180 Put", // Wrong option type!
+
                 aiReasoning: "🚀 BULLISH PLAY! Buy lower strike call, sell higher strike call"
             },
             
@@ -309,7 +293,7 @@
                     const longStrike = Math.round(currentPrice * 1.08);
                     return `Sell ${shortStrike} Call + Buy ${longStrike} Call`;
                 },
-                beforeFix: "Buy 175 Put", // Wrong option type!
+
                 aiReasoning: "📉 BEARISH INCOME! Sell calls to collect premium expecting downward movement"
             },
             
@@ -325,7 +309,7 @@
                     const shortStrike = Math.round(currentPrice * 0.92);
                     return `Buy ${longStrike} Put + Sell ${shortStrike} Put`;
                 },
-                beforeFix: "Sell 180 Call", // Wrong option type!
+
                 aiReasoning: "🐻 BEARISH DEBIT! Profit from significant downward movement"
             },
 
@@ -341,7 +325,7 @@
                     const strike = Math.round(currentPrice);
                     return `Buy ${strike} Call + Buy ${strike} Put`;
                 },
-                beforeFix: "Buy 180 Call + Sell 180 Put", // Wrong action!
+
                 aiReasoning: "⚡ HIGH VOLATILITY PLAY! Profit from large moves in either direction"
             },
             
@@ -357,7 +341,7 @@
                     const putStrike = Math.round(currentPrice * 0.97);
                     return `Buy ${callStrike} Call + Buy ${putStrike} Put`;
                 },
-                beforeFix: "Sell 185 Call + Sell 175 Put", // Wrong action!
+
                 aiReasoning: "🎯 CHEAPER VOLATILITY! Lower cost than straddle, needs bigger moves"
             },
 
@@ -376,7 +360,7 @@
                     const callBuy = Math.round(currentPrice * 1.10);
                     return `Sell ${putSell}P + Buy ${putBuy}P + Sell ${callSell}C + Buy ${callBuy}C`;
                 },
-                beforeFix: "Buy 175 Call + Sell 180 Call", // Incomplete!
+
                 aiReasoning: "🦅 NEUTRAL INCOME! Profit from low volatility and time decay"
             },
             
@@ -393,7 +377,7 @@
                     const callBuy = Math.round(currentPrice * 1.12);
                     return `Sell ${putSell} Put + Sell ${callSell}/${callBuy} Call Spread`;
                 },
-                beforeFix: "Buy Call + Sell Put + Buy Call", // Completely wrong!
+
                 aiReasoning: "🦎 HIGH IV CRUSHER! No upside risk, collect premium from elevated volatility"
             },
             
@@ -409,7 +393,7 @@
                     const wingStrike = Math.round(currentPrice * 0.05); // 5% wing spread
                     return `Buy ${centerStrike - wingStrike}P + Sell ${centerStrike}P + Sell ${centerStrike}C + Buy ${centerStrike + wingStrike}C`;
                 },
-                beforeFix: "Sell 180 Straddle", // Missing wings!
+
                 aiReasoning: "🦋 PINPOINT PRECISION! Maximum profit if stock stays at center strike"
             }
         };
@@ -539,12 +523,6 @@
                     </div>
                 </div>
                 
-                <div class="before-after">
-                    <h3>🎯 What We Fixed & Added:</h3>
-                    <p><strong>✅ Fixed all strategy bugs</strong> - No more "Bull Put Spreads" showing "Buy 180 Call"</p>
-                    <p><strong>📈 Added ${strategies.length} comprehensive strategies</strong> - Simple, Spreads, Volatility, and Complex strategies including Jade Lizard!</p>
-                </div>
-                
                 <h3>🚀 ${strategies.length} Recommended Options Strategies for ${stockData.symbol}</h3>
                 <p style="margin-bottom: 25px; color: #6c757d;">Strategies sorted by recommendation level and market conditions (IV: ${stockData.impliedVolatility.toFixed(1)}%)</p>
                 
@@ -576,12 +554,6 @@
                     <div class="strategy-type ${strategy.type}">
                         ${strategy.type.toUpperCase()} STRATEGY
                     </div>
-                    
-                    ${strategy.beforeFix !== 'N/A - Simple Strategy' ? `
-                    <div class="compact-before-after">
-                        <div><strong>❌ Before:</strong> <span class="before">${strategy.beforeFix}</span></div>
-                        <div><strong>✅ Fixed:</strong> <span class="after">${strategy.currentAction}</span></div>
-                    </div>` : ''}
                     
                     <div class="trade-setup">
                         <h4>✅ Current Recommendation:</h4>
