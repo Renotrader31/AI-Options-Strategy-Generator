@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔑 API Configuration Helper</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px; margin: 0;
+        }
+        .container { 
+            max-width: 800px; margin: 0 auto; background: white; 
+            border-radius: 15px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }
+        .api-section { 
+            background: #f8f9fa; padding: 20px; border-radius: 10px; 
+            margin-bottom: 20px; border-left: 4px solid #28a745;
+        }
+        .api-section.optional { border-left-color: #ffc107; }
+        .api-section h3 { margin-top: 0; color: #2c3e50; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { 
+            display: block; font-weight: 600; color: #495057; margin-bottom: 5px;
+        }
+        .input-group input { 
+            width: 100%; padding: 12px; border: 2px solid #dee2e6; 
+            border-radius: 8px; font-size: 1rem;
+        }
+        .input-group input:focus { outline: none; border-color: #667eea; }
+        .generate-btn { 
+            background: linear-gradient(135deg, #28a745, #20c997); 
+            color: white; padding: 15px 30px; border: none; 
+            border-radius: 8px; font-size: 1.1rem; font-weight: 600; 
+            cursor: pointer; width: 100%; margin-top: 20px;
+        }
+        .generate-btn:hover { transform: translateY(-2px); }
+        .code-output { 
+            background: #2d3748; color: #e2e8f0; padding: 20px; 
+            border-radius: 8px; font-family: 'Courier New', monospace; 
+            margin-top: 20px; white-space: pre-wrap; font-size: 0.9rem;
+            display: none;
+        }
+        .copy-btn { 
+            background: #667eea; color: white; padding: 8px 15px; 
+            border: none; border-radius: 5px; margin-top: 10px; cursor: pointer;
+        }
+        .priority { 
+            display: inline-block; background: #28a745; color: white; 
+            padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; margin-left: 10px;
+        }
+        .priority.medium { background: #ffc107; }
+        .note { background: #d1ecf1; color: #0c5460; padding: 10px; border-radius: 5px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 API Configuration Helper</h1>
+        <p style="text-align: center; color: #6c757d; margin-bottom: 30px;">
+            Enter your API keys below to generate the configuration code for your options strategy app.
+        </p>
+
+        <div class="api-section">
+            <h3>📈 Polygon.io <span class="priority">HIGH PRIORITY</span></h3>
+            <p>Primary data source for real-time stock prices and market data.</p>
+            <div class="input-group">
+                <label for="polygon-key">API Key:</label>
+                <input type="text" id="polygon-key" placeholder="Enter your Polygon.io API key">
+            </div>
+            <div class="note">
+                <strong>Get your key:</strong> <a href="https://polygon.io/" target="_blank">https://polygon.io/</a><br>
+                <strong>Free tier:</strong> 5 calls/minute, 100 calls/day
+            </div>
+        </div>
+
+        <div class="api-section">
+            <h3>💰 Financial Modeling Prep <span class="priority">HIGH PRIORITY</span></h3>
+            <p>Fallback data source for stock quotes and financial metrics.</p>
+            <div class="input-group">
+                <label for="fmp-key">API Key:</label>
+                <input type="text" id="fmp-key" placeholder="Enter your FMP API key">
+            </div>
+            <div class="note">
+                <strong>Get your key:</strong> <a href="https://financialmodelingprep.com/" target="_blank">https://financialmodelingprep.com/</a><br>
+                <strong>Free tier:</strong> 10 calls/minute, 250 calls/day
+            </div>
+        </div>
+
+        <div class="api-section optional">
+            <h3>📊 Ortex <span class="priority medium">OPTIONAL</span></h3>
+            <p>Short interest data and squeeze metrics (premium service).</p>
+            <div class="input-group">
+                <label for="ortex-key">API Key:</label>
+                <input type="text" id="ortex-key" placeholder="Enter your Ortex API key (optional)">
+            </div>
+            <div class="note">
+                <strong>Get your key:</strong> <a href="https://www.ortex.com/" target="_blank">https://www.ortex.com/</a><br>
+                <strong>Note:</strong> Premium service - enhances strategy recommendations
+            </div>
+        </div>
+
+        <div class="api-section optional">
+            <h3>🐋 Unusual Whales <span class="priority medium">OPTIONAL</span></h3>
+            <p>Options flow and dark pool data (premium service).</p>
+            <div class="input-group">
+                <label for="uw-key">API Key:</label>
+                <input type="text" id="uw-key" placeholder="Enter your Unusual Whales API key (optional)">
+            </div>
+            <div class="note">
+                <strong>Get your key:</strong> <a href="https://unusualwhales.com/" target="_blank">https://unusualwhales.com/</a><br>
+                <strong>Note:</strong> Premium service - provides options intelligence
+            </div>
+        </div>
+
+        <button class="generate-btn" onclick="generateConfig()">
+            🚀 Generate Configuration Code
+        </button>
+
+        <div id="code-output" class="code-output"></div>
+    </div>
+
+    <script>
+        function generateConfig() {
+            const polygonKey = document.getElementById('polygon-key').value.trim();
+            const fmpKey = document.getElementById('fmp-key').value.trim();
+            const ortexKey = document.getElementById('ortex-key').value.trim();
+            const uwKey = document.getElementById('uw-key').value.trim();
+
+            if (!polygonKey && !fmpKey) {
+                alert('⚠️ Please enter at least one API key (Polygon or FMP) for live data!');
+                return;
+            }
+
+            const config = `this.apiConfig = {
+    POLYGON_API_KEY: '${polygonKey || 'YOUR_POLYGON_API_KEY_HERE'}',
+    FMP_API_KEY: '${fmpKey || 'YOUR_FMP_API_KEY_HERE'}',
+    ORTEX_API_KEY: '${ortexKey || 'YOUR_ORTEX_API_KEY_HERE'}',
+    UNUSUAL_WHALES_API_KEY: '${uwKey || 'YOUR_UNUSUAL_WHALES_API_KEY_HERE'}'
+};`;
+
+            const instructions = `
+✅ Configuration Generated Successfully!
+
+1. Copy the code below
+2. Open your index.html file
+3. Find the line around line 442 that says:
+   this.apiConfig = {
+4. Replace the entire apiConfig section with the code below
+5. Save the file and deploy!
+
+📊 API Status:
+${polygonKey ? '✅ Polygon.io: Configured (Primary data source)' : '❌ Polygon.io: Not configured'}
+${fmpKey ? '✅ FMP: Configured (Fallback data source)' : '❌ FMP: Not configured'}
+${ortexKey ? '✅ Ortex: Configured (Short interest data)' : '⚪ Ortex: Not configured (optional)'}
+${uwKey ? '✅ Unusual Whales: Configured (Options flow data)' : '⚪ Unusual Whales: Not configured (optional)'}
+
+🎯 Your app will now use ${polygonKey ? 'Polygon.io' : fmpKey ? 'FMP' : 'mock data'} as the primary data source!
+
+------- COPY THE CODE BELOW -------
+
+${config}`;
+
+            const outputDiv = document.getElementById('code-output');
+            outputDiv.textContent = instructions;
+            outputDiv.style.display = 'block';
+            
+            // Add copy button
+            const copyBtn = document.createElement('button');
+            copyBtn.textContent = '📋 Copy Configuration Code';
+            copyBtn.className = 'copy-btn';
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(config).then(() => {
+                    copyBtn.textContent = '✅ Copied!';
+                    setTimeout(() => {
+                        copyBtn.textContent = '📋 Copy Configuration Code';
+                    }, 2000);
+                });
+            };
+            
+            outputDiv.appendChild(copyBtn);
+            
+            // Scroll to output
+            outputDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
