@@ -409,18 +409,29 @@
             
             setLoading(true);
             
-            // Simulate API delay
-            setTimeout(() => {
+            // Fetch data with proper async handling
+            setTimeout(async () => {
                 try {
-                    const stockData = generateMockData(ticker);
+                    console.log(`🔍 Starting analysis for ${ticker}...`);
+                    const stockData = await generateMockData(ticker);
+                    
+                    console.log('📊 Received stock data:', stockData);
+                    
+                    if (!stockData) {
+                        throw new Error('Failed to fetch stock data');
+                    }
+                    
                     const strategies = generateStrategies(stockData);
+                    console.log(`📈 Generated ${strategies.length} strategies`);
+                    
                     displayResults(stockData, strategies);
                 } catch (error) {
-                    displayError(error.message);
+                    console.error('❌ Analysis failed:', error);
+                    displayError(`Failed to analyze ${ticker}: ${error.message}`);
                 } finally {
                     setLoading(false);
                 }
-            }, 1000);
+            }, 800);
         }
         
         function setLoading(loading) {
@@ -681,8 +692,38 @@
         const liveDataManager = new LiveDataManager();
         
         async function generateMockData(ticker) {
-            // This now uses the live data system!
-            return await liveDataManager.getComprehensiveStockData(ticker);
+            try {
+                // This now uses the live data system!
+                const data = await liveDataManager.getComprehensiveStockData(ticker);
+                
+                // Validate the data structure
+                if (!data || typeof data.currentPrice !== 'number') {
+                    console.warn('⚠️ Invalid data structure, generating fallback...');
+                    return generateFallbackData(ticker);
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('❌ generateMockData failed:', error);
+                return generateFallbackData(ticker);
+            }
+        }
+        
+        function generateFallbackData(ticker) {
+            const basePrice = 100 + Math.random() * 150;
+            const change = (Math.random() - 0.5) * 8;
+            return {
+                symbol: ticker.toUpperCase(),
+                currentPrice: Math.round((basePrice + change) * 100) / 100,
+                change: Math.round(change * 100) / 100,
+                changePercent: Math.round((change / basePrice) * 10000) / 100,
+                volume: Math.floor(Math.random() * 5000000) + 1000000,
+                impliedVolatility: 20 + Math.random() * 25,
+                optionsExpiry: "30-45 DTE",
+                source: 'Fallback Data',
+                isRealData: false,
+                lastUpdated: new Date().toISOString()
+            };
         }
         
         function generateStrategies(stockData) {
@@ -737,12 +778,33 @@
         
         function displayResults(stockData, strategies) {
             const resultsDiv = document.getElementById('results');
-            const changeClass = stockData.change >= 0 ? 'color: #28a745' : 'color: #dc3545';
-            const changeSymbol = stockData.change >= 0 ? '+' : '';
+            
+            // Validate stockData and provide defaults
+            if (!stockData) {
+                displayError('No stock data available');
+                return;
+            }
+            
+            const currentPrice = stockData.currentPrice || 0;
+            const change = stockData.change || 0;
+            const changePercent = stockData.changePercent || 0;
+            const volume = stockData.volume || 0;
+            const impliedVolatility = stockData.impliedVolatility || 25;
+            
+            const changeClass = change >= 0 ? 'color: #28a745' : 'color: #dc3545';
+            const changeSymbol = change >= 0 ? '+' : '';
+            
+            console.log('📊 Displaying results for:', stockData.symbol, {
+                currentPrice,
+                change,
+                changePercent,
+                volume,
+                impliedVolatility
+            });
             
             resultsDiv.innerHTML = `
                 <div class="stock-info">
-                    <h2>📊 ${stockData.symbol} Analysis 
+                    <h2>📊 ${stockData.symbol || 'Unknown'} Analysis 
                         <span style="font-size: 0.6em; background: ${stockData.isRealData ? '#28a745' : '#ffc107'}; 
                                color: white; padding: 2px 8px; border-radius: 12px; margin-left: 10px;">
                             ${stockData.isRealData ? '🔴 LIVE' : '📊 MOCK'}
@@ -750,19 +812,19 @@
                     </h2>
                     <div class="detail-row">
                         <span><strong>Current Price:</strong></span>
-                        <span>$${stockData.currentPrice.toFixed(2)}</span>
+                        <span>$${currentPrice.toFixed(2)}</span>
                     </div>
                     <div class="detail-row">
                         <span><strong>Price Change:</strong></span>
-                        <span style="${changeClass}">${changeSymbol}${stockData.change.toFixed(2)} (${changeSymbol}${stockData.changePercent?.toFixed(2) || '0.00'}%)</span>
+                        <span style="${changeClass}">${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changePercent.toFixed(2)}%)</span>
                     </div>
                     <div class="detail-row">
                         <span><strong>Volume:</strong></span>
-                        <span>${stockData.volume.toLocaleString()}</span>
+                        <span>${volume.toLocaleString()}</span>
                     </div>
                     <div class="detail-row">
                         <span><strong>Implied Volatility:</strong></span>
-                        <span>${stockData.impliedVolatility.toFixed(1)}%</span>
+                        <span>${impliedVolatility.toFixed(1)}%</span>
                     </div>
                     ${stockData.source ? `
                     <div class="detail-row">
@@ -771,8 +833,8 @@
                     </div>` : ''}
                 </div>
                 
-                <h3>🚀 ${strategies.length} Recommended Options Strategies for ${stockData.symbol}</h3>
-                <p style="margin-bottom: 25px; color: #6c757d;">Strategies sorted by recommendation level and market conditions (IV: ${stockData.impliedVolatility.toFixed(1)}%)</p>
+                <h3>🚀 ${strategies.length} Recommended Options Strategies for ${stockData.symbol || 'Stock'}</h3>
+                <p style="margin-bottom: 25px; color: #6c757d;">Strategies sorted by recommendation level and market conditions (IV: ${impliedVolatility.toFixed(1)}%)</p>
                 
                 <div class="strategies-grid">
                     ${strategies.map(strategy => createStrategyCard(strategy)).join('')}
