@@ -20,6 +20,8 @@ export default function UltimateScanner() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [isClient, setIsClient] = useState(false);
+  const [portfolioView, setPortfolioView] = useState('active'); // 'active', 'closed', 'all'
+  const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'pnl', 'symbol'
 
   // Fix hydration issue
   useEffect(() => {
@@ -526,6 +528,39 @@ export default function UltimateScanner() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Filter and sort trades based on current view and sort preference
+  const getFilteredAndSortedTrades = () => {
+    let filteredTrades = trades;
+    
+    // Filter by status
+    if (portfolioView === 'active') {
+      filteredTrades = trades.filter(t => t.status === 'active');
+    } else if (portfolioView === 'closed') {
+      filteredTrades = trades.filter(t => t.status === 'closed');
+    }
+    // 'all' shows everything
+    
+    // Sort trades
+    const sortedTrades = [...filteredTrades].sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.entryDate || b.id) - new Date(a.entryDate || a.id);
+        case 'oldest':
+          return new Date(a.entryDate || a.id) - new Date(b.entryDate || b.id);
+        case 'pnl':
+          return (b.pnl || 0) - (a.pnl || 0);
+        case 'symbol':
+          return a.symbol.localeCompare(b.symbol);
+        case 'quantity':
+          return (b.quantity || 0) - (a.quantity || 0);
+        default:
+          return new Date(b.entryDate || b.id) - new Date(a.entryDate || a.id);
+      }
+    });
+    
+    return sortedTrades;
   };
 
   // Calculate analytics from local trades data
@@ -1814,18 +1849,121 @@ export default function UltimateScanner() {
               </div>
             </div>
 
-            {/* Active Trades Table */}
+            {/* Portfolio Trades Management */}
             {trades.length > 0 && (
               <div className="bg-slate-800 rounded-lg p-6">
-                <div className="mb-4 flex justify-between items-center">
-                  <h3 className="text-lg font-medium">Active Positions</h3>
-                  <button
-                    onClick={() => fetchTrades(null, true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-                    disabled={loading}
-                  >
-                    {loading ? '🔄 Updating...' : '📊 Refresh Live P&L'}
-                  </button>
+                {/* Portfolio Tab Navigation */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex space-x-4">
+                      {[
+                        { id: 'active', label: '📈 Active Positions', count: trades.filter(t => t.status === 'active').length },
+                        { id: 'closed', label: '✅ Closed Trades', count: trades.filter(t => t.status === 'closed').length },
+                        { id: 'all', label: '📄 All Trades', count: trades.length }
+                      ].map(tab => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setPortfolioView(tab.id)}
+                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            portfolioView === tab.id
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                          }`}
+                        >
+                          {tab.label} ({tab.count})
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => fetchTrades(null, true)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+                      disabled={loading}
+                    >
+                      {loading ? '🔄 Updating...' : '📊 Refresh Live P&L'}
+                    </button>
+                  </div>
+                  
+                  {/* Sorting Options */}
+                  <div className="flex items-center gap-4">
+                    <label className="text-sm text-slate-400">Sort by:</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="bg-slate-700 border border-slate-600 rounded px-3 py-1 text-white text-sm"
+                    >
+                      <option value="newest">Newest First</option>
+                      <option value="oldest">Oldest First</option>
+                      <option value="pnl">P&L (High to Low)</option>
+                      <option value="symbol">Symbol A-Z</option>
+                      <option value="quantity">Quantity (High to Low)</option>
+                    </select>
+                    
+                    <span className="text-xs text-slate-400">
+                      Showing {getFilteredAndSortedTrades().length} trade{getFilteredAndSortedTrades().length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Portfolio Summary for Current View */}
+                <div className="mb-4 p-4 bg-slate-700 rounded-lg">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="text-slate-400">Trades Shown</div>
+                      <div className="text-xl font-bold text-blue-400">
+                        {getFilteredAndSortedTrades().length}
+                      </div>
+                    </div>
+                    
+                    {portfolioView !== 'active' && (
+                      <div className="text-center">
+                        <div className="text-slate-400">Total P&L</div>
+                        <div className={`text-xl font-bold ${
+                          getFilteredAndSortedTrades().reduce((sum, t) => sum + (t.pnl || 0), 0) >= 0 
+                            ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          ${getFilteredAndSortedTrades().reduce((sum, t) => sum + (t.pnl || 0), 0).toFixed(2)}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {portfolioView === 'closed' && (
+                      <div className="text-center">
+                        <div className="text-slate-400">Win Rate</div>
+                        <div className="text-xl font-bold text-yellow-400">
+                          {getFilteredAndSortedTrades().length > 0 
+                            ? (getFilteredAndSortedTrades().filter(t => t.pnl > 0).length / getFilteredAndSortedTrades().length * 100).toFixed(1)
+                            : 0}%
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="text-center">
+                      <div className="text-slate-400">
+                        {portfolioView === 'active' ? 'Avg Position Size' : 'Avg Trade Size'}
+                      </div>
+                      <div className="text-xl font-bold text-purple-400">
+                        {getFilteredAndSortedTrades().length > 0 
+                          ? Math.round(getFilteredAndSortedTrades().reduce((sum, t) => sum + (t.quantity || 0), 0) / getFilteredAndSortedTrades().length)
+                          : 0}
+                      </div>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="text-slate-400">Most Traded</div>
+                      <div className="text-lg font-bold text-orange-400">
+                        {(() => {
+                          if (getFilteredAndSortedTrades().length === 0) return 'N/A';
+                          const symbolCounts = getFilteredAndSortedTrades().reduce((acc, trade) => {
+                            acc[trade.symbol] = (acc[trade.symbol] || 0) + 1;
+                            return acc;
+                          }, {});
+                          const sorted = Object.entries(symbolCounts).sort(([,a], [,b]) => b - a);
+                          return sorted[0]?.[0] || 'N/A';
+                        })()}
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 
               <div className="overflow-x-auto">
@@ -1844,7 +1982,7 @@ export default function UltimateScanner() {
                     </tr>
                   </thead>
                   <tbody>
-                    {trades.slice(0, 10).map(trade => (
+                    {getFilteredAndSortedTrades().map(trade => (
                       <tr key={trade.id} className="border-b border-slate-700 hover:bg-slate-700/50">
                         <td className="py-2 font-medium">
                           <div className="flex items-center gap-2">
@@ -1955,6 +2093,22 @@ export default function UltimateScanner() {
                     ))}
                   </tbody>
                 </table>
+                
+                {getFilteredAndSortedTrades().length === 0 && (
+                  <div className="text-center py-8 text-slate-400">
+                    <div className="text-4xl mb-2">
+                      {portfolioView === 'active' ? '📈' : portfolioView === 'closed' ? '✅' : '📄'}
+                    </div>
+                    <div className="text-lg mb-1">
+                      No {portfolioView === 'active' ? 'active positions' : portfolioView === 'closed' ? 'closed trades' : 'trades'} found
+                    </div>
+                    <div className="text-sm">
+                      {portfolioView === 'active' ? 'Record a trade above to get started!' : 
+                       portfolioView === 'closed' ? 'Close some positions to see them here' : 
+                       'Start trading to build your portfolio history'}
+                    </div>
+                  </div>
+                )}
               </div>
               </div>
             )}
