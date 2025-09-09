@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Flow Test</title>
+    <link rel="icon" href="data:,">
+</head>
+<body>
+    <h1>Testing User Flow - Enter Ticker</h1>
+    <div>
+        <input type="text" id="ticker" placeholder="AAPL" value="AAPL">
+        <button onclick="testGeneration()">Generate Strategy</button>
+    </div>
+    <div id="results"></div>
+    
+    <script>
+        // Simulating the exact function from main app
+        class LiveDataManager {
+            constructor() {
+                this.apiConfig = {
+                    POLYGON_API_KEY: '75rlu6cWGNnIqqR_x8M384YUjBgGk6kT',
+                    FMP_API_KEY: 'm2XfxOS0sZxs6hLEY5yRzUgDyp5Dur4V',
+                    ORTEX_API_KEY: 'Q0VpvWFI.wPuSEG6CNr7uoRZbtFcmVeeXpoJvjz75',
+                    UNUSUAL_WHALES_API_KEY: '29a464c8-9da0-490a-ac24-0d4aa492dcbd'
+                };
+                
+                this.cache = new Map();
+                this.cacheTimeout = 30 * 1000;
+                
+                console.log('📊 Live Data Manager initialized');
+            }
+
+            async getComprehensiveStockData(ticker) {
+                try {
+                    console.log(`🔍 Fetching comprehensive data for ${ticker}...`);
+                    
+                    const liveData = await this.getLiveStockData(ticker);
+                    if (liveData && liveData.isRealData) {
+                        console.log(`✅ Using LIVE data for ${ticker}`);
+                        return liveData;
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Live data fetch failed:', error);
+                }
+                
+                console.log(`📊 Using MOCK data for ${ticker}`);
+                return this.generateEnhancedMockData(ticker);
+            }
+            
+            async getLiveStockData(ticker) {
+                try {
+                    const data = await this.getPolygonData(ticker);
+                    console.log(`🎯 Polygon data retrieved for ${ticker}`);
+                    return data;
+                } catch (polygonError) {
+                    console.log(`⚠️ Polygon failed, trying FMP: ${polygonError.message}`);
+                    try {
+                        const data = await this.getFMPData(ticker);
+                        console.log(`🎯 FMP data retrieved for ${ticker}`);
+                        return data;
+                    } catch (fmpError) {
+                        console.log(`⚠️ FMP also failed: ${fmpError.message}`);
+                        throw new Error('Both APIs failed');
+                    }
+                }
+            }
+            
+            async getPolygonData(ticker) {
+                const response = await fetch(
+                    `https://api.polygon.io/v2/aggs/ticker/${ticker.toUpperCase()}/prev?adjusted=true&apikey=${this.apiConfig.POLYGON_API_KEY}`
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`Polygon API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (!data.results || data.results.length === 0) {
+                    throw new Error('No Polygon data available');
+                }
+                
+                const result = data.results[0];
+                return {
+                    symbol: ticker.toUpperCase(),
+                    currentPrice: result.c,
+                    change: result.c - result.o,
+                    changePercent: ((result.c - result.o) / result.o) * 100,
+                    volume: result.v,
+                    source: 'Polygon.io',
+                    isRealData: true,
+                    timestamp: new Date(result.t)
+                };
+            }
+            
+            async getFMPData(ticker) {
+                const response = await fetch(
+                    `https://financialmodelingprep.com/api/v3/quote/${ticker.toUpperCase()}?apikey=${this.apiConfig.FMP_API_KEY}`
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`FMP API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (!data || data.length === 0) {
+                    throw new Error('No FMP data available');
+                }
+                
+                const result = data[0];
+                return {
+                    symbol: ticker.toUpperCase(),
+                    currentPrice: result.price,
+                    change: result.change,
+                    changePercent: result.changesPercentage,
+                    volume: result.volume || 0,
+                    source: 'Financial Modeling Prep',
+                    isRealData: true,
+                    timestamp: new Date()
+                };
+            }
+            
+            generateEnhancedMockData(ticker) {
+                const basePrice = 100 + Math.random() * 400;
+                const change = basePrice * (Math.random() - 0.5) * 0.1;
+                const currentPrice = basePrice + change;
+                
+                return {
+                    symbol: ticker.toUpperCase(),
+                    currentPrice: parseFloat(currentPrice.toFixed(2)),
+                    change: parseFloat(change.toFixed(2)),
+                    changePercent: parseFloat(((change / basePrice) * 100).toFixed(2)),
+                    volume: Math.floor(Math.random() * 10000000),
+                    source: 'Enhanced Mock Data',
+                    isRealData: false,
+                    timestamp: new Date()
+                };
+            }
+        }
+
+        const liveDataManager = new LiveDataManager();
+
+        async function generateMockData(ticker) {
+            try {
+                const data = await liveDataManager.getComprehensiveStockData(ticker);
+                
+                if (!data || typeof data.currentPrice !== 'number') {
+                    throw new Error('Invalid stock data received');
+                }
+                
+                console.log('📊 Stock data received:', data);
+                return data;
+                
+            } catch (error) {
+                console.error('❌ Data generation failed:', error);
+                throw error;
+            }
+        }
+
+        async function testGeneration() {
+            const ticker = document.getElementById('ticker').value || 'AAPL';
+            const results = document.getElementById('results');
+            
+            try {
+                results.innerHTML = '<p>🔄 Loading...</p>';
+                
+                console.log(`🎯 Testing strategy generation for ${ticker}`);
+                const stockData = await generateMockData(ticker);
+                
+                results.innerHTML = `
+                    <h2>📊 ${stockData.symbol} Analysis 
+                        <span style="font-size: 0.8em; background: ${stockData.isRealData ? '#28a745' : '#ffc107'}; 
+                               color: white; padding: 4px 8px; border-radius: 12px; margin-left: 10px;">
+                            ${stockData.isRealData ? '🔴 LIVE' : '📊 MOCK'}
+                        </span>
+                    </h2>
+                    <div>
+                        <p><strong>Current Price:</strong> $${stockData.currentPrice}</p>
+                        <p><strong>Change:</strong> ${stockData.change > 0 ? '+' : ''}$${stockData.change} (${stockData.changePercent > 0 ? '+' : ''}${stockData.changePercent}%)</p>
+                        <p><strong>Volume:</strong> ${stockData.volume?.toLocaleString() || 'N/A'}</p>
+                        <p><strong>Data Source:</strong> ${stockData.source}</p>
+                        <p><strong>Last Updated:</strong> ${stockData.timestamp?.toLocaleString()}</p>
+                    </div>
+                    
+                    <h3>✅ Live Data Status</h3>
+                    <p>${stockData.isRealData ? 
+                        '🎉 SUCCESS: Using real-time market data!' : 
+                        '⚠️ Using mock data (APIs may be unavailable)'
+                    }</p>
+                `;
+                
+            } catch (error) {
+                console.error('Generation failed:', error);
+                results.innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Auto-test on load
+        window.onload = () => {
+            setTimeout(() => testGeneration(), 1000);
+        };
+    </script>
+</body>
+</html>

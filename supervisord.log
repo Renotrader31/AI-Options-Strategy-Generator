@@ -1,0 +1,39 @@
+2025-09-09 15:44:02,588 INFO RPC interface 'supervisor' initialized
+2025-09-09 15:44:02,588 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+2025-09-09 15:44:02,590 INFO daemonizing the supervisord process
+2025-09-09 15:44:02,591 INFO supervisord started with pid 1047
+2025-09-09 15:44:03,596 INFO spawned: 'webserver' with pid 1049
+2025-09-09 15:44:03,697 WARN exited: webserver (exit status 1; not expected)
+2025-09-09 15:44:04,702 INFO spawned: 'webserver' with pid 1051
+2025-09-09 15:44:04,815 WARN exited: webserver (exit status 1; not expected)
+2025-09-09 15:44:07,667 INFO spawned: 'webserver' with pid 1057
+2025-09-09 15:44:07,772 WARN exited: webserver (exit status 1; not expected)
+2025-09-09 15:44:10,776 INFO spawned: 'webserver' with pid 1088
+2025-09-09 15:44:11,884 INFO success: webserver entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-09 15:44:11,884 WARN exited: webserver (exit status 1; not expected)
+2025-09-09 15:44:12,887 INFO spawned: 'webserver' with pid 1114
+2025-09-09 15:44:12,988 WARN exited: webserver (exit status 1; not expected)
+2025-09-09 15:44:13,991 INFO spawned: 'webserver' with pid 1120
+2025-09-09 15:44:14,092 WARN exited: webserver (exit status 1; not expected)
+2025-09-09 15:44:16,096 INFO spawned: 'webserver' with pid 1125
+2025-09-09 15:44:16,198 WARN exited: webserver (exit status 1; not expected)
+2025-09-09 15:44:18,904 INFO spawned: 'webserver' with pid 1241
+2025-09-09 15:44:20,051 INFO success: webserver entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-09 15:44:20,052 WARN exited: webserver (exit status 1; not expected)
+2025-09-09 15:44:20,054 INFO spawned: 'webserver' with pid 1272
+2025-09-09 15:44:20,175 WARN exited: webserver (exit status 1; not expected)
+2025-09-09 15:44:21,179 INFO spawned: 'webserver' with pid 1277
+2025-09-09 15:44:21,306 WARN exited: webserver (exit status 1; not expected)
+2025-09-09 15:44:23,310 INFO spawned: 'webserver' with pid 1281
+2025-09-09 15:44:23,434 WARN exited: webserver (exit status 1; not expected)
+2025-09-09 15:44:24,436 WARN received SIGTERM indicating exit request
+2025-09-09 15:44:29,502 INFO RPC interface 'supervisor' initialized
+2025-09-09 15:44:29,502 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+2025-09-09 15:44:29,504 INFO daemonizing the supervisord process
+2025-09-09 15:44:29,505 INFO supervisord started with pid 1297
+2025-09-09 15:44:30,509 INFO spawned: 'webserver' with pid 1299
+2025-09-09 15:44:31,511 INFO success: webserver entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-09 15:53:09,211 INFO waiting for webserver to stop
+2025-09-09 15:53:09,212 WARN stopped: webserver (terminated by SIGTERM)
+2025-09-09 15:53:09,216 INFO spawned: 'webserver' with pid 5115
+2025-09-09 15:53:10,218 INFO success: webserver entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
