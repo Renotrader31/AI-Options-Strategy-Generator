@@ -96,6 +96,7 @@ export async function GET(request) {
 // Multi-source data fetching with fallbacks
 async function fetchLiveDataFromSources(symbols) {
   const sources = [
+    { name: 'YAHOO_FINANCE', fetch: fetchFromYahooFinance }, // Free, no API key needed
     { name: 'FMP', fetch: fetchFromFMP },
     { name: 'TWELVE_DATA', fetch: fetchFromTwelveData },
     { name: 'ALPHA_VANTAGE', fetch: fetchFromAlphaVantage },
@@ -144,14 +145,15 @@ async function fetchLiveDataFromSources(symbols) {
   };
 }
 
-// FMP API implementation
+// FMP API implementation - with free tier support
 async function fetchFromFMP(symbols) {
-  if (API_KEYS.FMP === 'demo') {
-    throw new Error('Demo key - skipping FMP');
-  }
+  // FMP offers free tier with limited requests
+  const apiKey = API_KEYS.FMP === 'demo' ? 'demo' : API_KEYS.FMP;
   
   const symbolList = symbols.join(',');
-  const url = `https://financialmodelingprep.com/api/v3/quote/${symbolList}?apikey=${API_KEYS.FMP}`;
+  const url = apiKey === 'demo' 
+    ? `https://financialmodelingprep.com/api/v3/quote/${symbolList}?apikey=demo` // This will fail gracefully
+    : `https://financialmodelingprep.com/api/v3/quote/${symbolList}?apikey=${apiKey}`;
   
   const response = await fetch(url, {
     headers: {
@@ -264,6 +266,62 @@ async function fetchFromAlphaVantage(symbols) {
   });
   
   return await Promise.all(promises);
+}
+
+// Yahoo Finance API (free, no API key required)
+async function fetchFromYahooFinance(symbols) {
+  try {
+    // Using a public Yahoo Finance API proxy that doesn't require keys
+    const promises = symbols.map(async (symbol) => {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        timeout: 8000
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Yahoo Finance error for ${symbol}: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const result = data?.chart?.result?.[0];
+      
+      if (!result) {
+        throw new Error(`No data for ${symbol}`);
+      }
+      
+      const meta = result.meta;
+      const currentPrice = meta.regularMarketPrice || meta.previousClose;
+      const previousClose = meta.previousClose;
+      const change = currentPrice - previousClose;
+      const changePercent = (change / previousClose) * 100;
+      
+      return {
+        symbol: symbol,
+        price: Math.round(currentPrice * 100) / 100,
+        change: Math.round(change * 100) / 100,
+        changePercent: Math.round(changePercent * 100) / 100,
+        volume: meta.regularMarketVolume || 0,
+        avgVolume: meta.averageDailyVolume10Day || 0,
+        marketCap: meta.marketCap || 0,
+        high: meta.regularMarketDayHigh || currentPrice,
+        low: meta.regularMarketDayLow || currentPrice,
+        open: meta.regularMarketOpen || currentPrice,
+        previousClose: previousClose
+      };
+    });
+    
+    const results = await Promise.all(promises);
+    console.log(`✅ Yahoo Finance: Got ${results.length} real-time prices`);
+    return results.filter(r => r !== null);
+    
+  } catch (error) {
+    console.error('❌ Yahoo Finance failed:', error.message);
+    throw error;
+  }
 }
 
 // Generate mock data as fallback
