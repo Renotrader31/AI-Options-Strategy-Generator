@@ -31,15 +31,28 @@ export default function UltimateScanner() {
     symbol: '',
     assetType: 'STOCK',
     type: 'BUY',
+    strategyType: 'SINGLE', // SINGLE, SPREAD, STRADDLE, STRANGLE, IRON_CONDOR, etc.
     quantity: '',
     price: '',
     stopLoss: '',
     takeProfit: '',
     notes: '',
+    // Single option fields
     optionType: 'CALL',
     strikePrice: '',
     expirationDate: '',
-    premium: ''
+    premium: '',
+    // Multi-leg fields
+    legs: [
+      {
+        action: 'BUY', // BUY or SELL
+        optionType: 'CALL',
+        strikePrice: '',
+        expirationDate: '',
+        premium: '',
+        quantity: ''
+      }
+    ]
   });
 
   // Popular symbols for quick entry
@@ -47,6 +60,72 @@ export default function UltimateScanner() {
     'AAPL', 'TSLA', 'NVDA', 'AMD', 'SPY', 'QQQ', 'META', 'AMZN', 
     'GOOGL', 'MSFT', 'NFLX', 'PLTR', 'SOFI', 'RIVN', 'NIO'
   ];
+
+  // Multi-leg strategy templates
+  const strategyTemplates = {
+    SINGLE: {
+      name: 'Single Option',
+      legs: 1,
+      description: 'Buy or sell a single call or put'
+    },
+    CALL_SPREAD: {
+      name: 'Call Spread',
+      legs: 2,
+      description: 'Buy call at lower strike, sell call at higher strike',
+      template: [
+        { action: 'BUY', optionType: 'CALL', strikeOffset: 0 },
+        { action: 'SELL', optionType: 'CALL', strikeOffset: 5 }
+      ]
+    },
+    PUT_SPREAD: {
+      name: 'Put Spread',
+      legs: 2,
+      description: 'Buy put at higher strike, sell put at lower strike',
+      template: [
+        { action: 'BUY', optionType: 'PUT', strikeOffset: 5 },
+        { action: 'SELL', optionType: 'PUT', strikeOffset: 0 }
+      ]
+    },
+    STRADDLE: {
+      name: 'Long Straddle',
+      legs: 2,
+      description: 'Buy call and put at same strike (volatility play)',
+      template: [
+        { action: 'BUY', optionType: 'CALL', strikeOffset: 0 },
+        { action: 'BUY', optionType: 'PUT', strikeOffset: 0 }
+      ]
+    },
+    STRANGLE: {
+      name: 'Long Strangle',
+      legs: 2,
+      description: 'Buy call and put at different strikes',
+      template: [
+        { action: 'BUY', optionType: 'CALL', strikeOffset: 5 },
+        { action: 'BUY', optionType: 'PUT', strikeOffset: -5 }
+      ]
+    },
+    IRON_CONDOR: {
+      name: 'Iron Condor',
+      legs: 4,
+      description: 'Sell call spread + sell put spread (range-bound)',
+      template: [
+        { action: 'SELL', optionType: 'PUT', strikeOffset: -10 },
+        { action: 'BUY', optionType: 'PUT', strikeOffset: -15 },
+        { action: 'SELL', optionType: 'CALL', strikeOffset: 10 },
+        { action: 'BUY', optionType: 'CALL', strikeOffset: 15 }
+      ]
+    },
+    BUTTERFLY: {
+      name: 'Butterfly Spread',
+      legs: 3,
+      description: 'Buy 1 ITM call + Sell 2 ATM calls + Buy 1 OTM call',
+      template: [
+        { action: 'BUY', optionType: 'CALL', strikeOffset: -5 },
+        { action: 'SELL', optionType: 'CALL', strikeOffset: 0, quantity: 2 },
+        { action: 'BUY', optionType: 'CALL', strikeOffset: 5 }
+      ]
+    }
+  };
 
   // Load initial data and restore from localStorage
   useEffect(() => {
@@ -241,8 +320,69 @@ export default function UltimateScanner() {
       const symbolData = liveData.data.find(item => item.symbol === symbol);
       if (symbolData) {
         setTradeForm(prev => ({ ...prev, price: symbolData.price.toString() }));
+        // Auto-populate strike prices for multi-leg strategies
+        if (prev.strategyType !== 'SINGLE' && strategyTemplates[prev.strategyType]) {
+          populateStrategyTemplate(prev.strategyType, symbolData.price);
+        }
       }
     }
+  };
+
+  // Populate strategy template with realistic strikes
+  const populateStrategyTemplate = (strategyType, currentPrice) => {
+    const template = strategyTemplates[strategyType];
+    if (!template?.template) return;
+    
+    const atmStrike = Math.round(currentPrice / 5) * 5; // Round to nearest $5
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 30); // 30 days out
+    const expiryString = expiry.toISOString().split('T')[0];
+    
+    const newLegs = template.template.map(legTemplate => ({
+      action: legTemplate.action,
+      optionType: legTemplate.optionType,
+      strikePrice: (atmStrike + legTemplate.strikeOffset).toString(),
+      expirationDate: expiryString,
+      premium: (2 + Math.random() * 3).toFixed(2), // Mock premium 2-5
+      quantity: (legTemplate.quantity || 1).toString()
+    }));
+    
+    setTradeForm(prev => ({ ...prev, legs: newLegs }));
+  };
+
+  // Change strategy type
+  const changeStrategyType = (newStrategyType) => {
+    setTradeForm(prev => {
+      const template = strategyTemplates[newStrategyType];
+      if (template?.template) {
+        return {
+          ...prev,
+          strategyType: newStrategyType,
+          assetType: 'OPTION',
+          legs: template.template.map(leg => ({
+            action: leg.action,
+            optionType: leg.optionType,
+            strikePrice: '',
+            expirationDate: '',
+            premium: '',
+            quantity: (leg.quantity || 1).toString()
+          }))
+        };
+      } else {
+        return {
+          ...prev,
+          strategyType: newStrategyType,
+          legs: [{
+            action: 'BUY',
+            optionType: 'CALL',
+            strikePrice: '',
+            expirationDate: '',
+            premium: '',
+            quantity: '1'
+          }]
+        };
+      }
+    });
   };
 
   // Handle trade submission
@@ -298,14 +438,54 @@ export default function UltimateScanner() {
       console.log('📝 Creating trade locally:', tradeData);
       
       // Create trade locally with localStorage (no server dependency)
-      const newTrade = {
-        id: Date.now().toString(), // Simple ID based on timestamp
-        ...tradeData,
-        entryDate: new Date().toISOString(),
-        currentPrice: tradeData.entryPrice, // Start with entry price
-        pnl: 0, // Initial P&L is zero
-        pnlPercent: 0 // Initial P&L percentage is zero
-      };
+      let newTrade;
+      
+      if (tradeForm.strategyType !== 'SINGLE' && tradeForm.legs.length > 1) {
+        // Multi-leg strategy
+        const netPremium = tradeForm.legs.reduce((sum, leg) => {
+          const premium = parseFloat(leg.premium) || 0;
+          const qty = parseFloat(leg.quantity) || 1;
+          return sum + (leg.action === 'BUY' ? -premium * qty : premium * qty);
+        }, 0);
+        
+        newTrade = {
+          id: Date.now().toString(),
+          symbol: tradeForm.symbol,
+          assetType: 'MULTI_LEG_OPTION',
+          strategyType: tradeForm.strategyType,
+          strategyName: strategyTemplates[tradeForm.strategyType]?.name || 'Custom Strategy',
+          legs: tradeForm.legs.map((leg, index) => ({
+            legId: `${Date.now()}_${index}`,
+            action: leg.action,
+            optionType: leg.optionType,
+            strikePrice: parseFloat(leg.strikePrice),
+            expirationDate: leg.expirationDate,
+            quantity: parseInt(leg.quantity),
+            entryPremium: parseFloat(leg.premium),
+            currentPremium: parseFloat(leg.premium) // Start with entry premium
+          })),
+          netPremium: Math.round(netPremium * 100) / 100,
+          quantity: 1, // Multi-leg strategies are typically 1 "set"
+          entryPrice: Math.abs(netPremium), // Use absolute net premium as entry price
+          stopLoss: tradeForm.stopLoss ? parseFloat(tradeForm.stopLoss) : null,
+          takeProfit: tradeForm.takeProfit ? parseFloat(tradeForm.takeProfit) : null,
+          notes: tradeForm.notes || `${strategyTemplates[tradeForm.strategyType]?.name} Strategy`,
+          status: 'active',
+          entryDate: new Date().toISOString(),
+          pnl: 0,
+          pnlPercent: 0
+        };
+      } else {
+        // Single leg trade (existing logic)
+        newTrade = {
+          id: Date.now().toString(),
+          ...tradeData,
+          entryDate: new Date().toISOString(),
+          currentPrice: tradeData.entryPrice,
+          pnl: 0,
+          pnlPercent: 0
+        };
+      }
       
       console.log('💾 New trade created:', newTrade);
       
@@ -1214,10 +1394,10 @@ export default function UltimateScanner() {
 
               {/* Asset Type Selection */}
               <div className="mb-6">
-                <label className="text-sm text-slate-400 mb-2 block">Asset Type</label>
-                <div className="flex gap-3">
+                <label className="text-sm text-slate-400 mb-2 block">Trading Type</label>
+                <div className="flex gap-3 flex-wrap">
                   <button
-                    onClick={() => setTradeForm(prev => ({ ...prev, assetType: 'STOCK', type: 'BUY' }))}
+                    onClick={() => setTradeForm(prev => ({ ...prev, assetType: 'STOCK', strategyType: 'SINGLE', type: 'BUY' }))}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
                       tradeForm.assetType === 'STOCK'
                         ? 'bg-blue-600 text-white'
@@ -1227,17 +1407,63 @@ export default function UltimateScanner() {
                     📈 Stocks
                   </button>
                   <button
-                    onClick={() => setTradeForm(prev => ({ ...prev, assetType: 'OPTION', type: 'BUY_TO_OPEN' }))}
+                    onClick={() => setTradeForm(prev => ({ ...prev, assetType: 'OPTION', strategyType: 'SINGLE', type: 'BUY_TO_OPEN' }))}
                     className={`px-4 py-2 rounded font-medium transition-colors ${
-                      tradeForm.assetType === 'OPTION'
+                      tradeForm.assetType === 'OPTION' && tradeForm.strategyType === 'SINGLE'
                         ? 'bg-purple-600 text-white'
                         : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                     }`}
                   >
-                    ⚡ Options
+                    ⚡ Single Option
+                  </button>
+                  <button
+                    onClick={() => changeStrategyType('CALL_SPREAD')}
+                    className={`px-4 py-2 rounded font-medium transition-colors ${
+                      tradeForm.strategyType === 'CALL_SPREAD'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    📊 Spreads
+                  </button>
+                  <button
+                    onClick={() => changeStrategyType('STRADDLE')}
+                    className={`px-4 py-2 rounded font-medium transition-colors ${
+                      ['STRADDLE', 'STRANGLE'].includes(tradeForm.strategyType)
+                        ? 'bg-yellow-600 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    🎯 Straddle/Strangle
+                  </button>
+                  <button
+                    onClick={() => changeStrategyType('IRON_CONDOR')}
+                    className={`px-4 py-2 rounded font-medium transition-colors ${
+                      ['IRON_CONDOR', 'BUTTERFLY'].includes(tradeForm.strategyType)
+                        ? 'bg-red-600 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    🦋 Advanced
                   </button>
                 </div>
               </div>
+
+              {/* Strategy Type Selection (for multi-leg) */}
+              {tradeForm.assetType === 'OPTION' && tradeForm.strategyType !== 'SINGLE' && (
+                <div className="mb-6">
+                  <label className="text-sm text-slate-400 mb-2 block">Strategy Template</label>
+                  <select
+                    value={tradeForm.strategyType}
+                    onChange={(e) => changeStrategyType(e.target.value)}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                  >
+                    {Object.entries(strategyTemplates).filter(([key]) => key !== 'SINGLE').map(([key, strategy]) => (
+                      <option key={key} value={key}>{strategy.name} - {strategy.description}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Trade Form */}
               <div className="grid grid-cols-3 gap-4 mb-6">
@@ -1289,8 +1515,8 @@ export default function UltimateScanner() {
                 </div>
               </div>
 
-              {/* Options-specific fields */}
-              {tradeForm.assetType === 'OPTION' && (
+              {/* Single Option fields */}
+              {tradeForm.assetType === 'OPTION' && tradeForm.strategyType === 'SINGLE' && (
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   <div>
                     <label className="text-sm text-slate-400 mb-1 block">Option Type</label>
@@ -1325,6 +1551,152 @@ export default function UltimateScanner() {
                       className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
                       min={new Date().toISOString().split('T')[0]}
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Multi-leg Options Strategy Builder */}
+              {tradeForm.assetType === 'OPTION' && tradeForm.strategyType !== 'SINGLE' && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-medium text-yellow-400">
+                      🏧 {strategyTemplates[tradeForm.strategyType]?.name} Builder
+                    </h4>
+                    <span className="text-xs text-slate-400">
+                      {tradeForm.legs.length} leg{tradeForm.legs.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {tradeForm.legs.map((leg, index) => (
+                      <div key={index} className="bg-slate-700 p-4 rounded border-l-4 border-yellow-400">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-sm font-bold text-yellow-400">Leg {index + 1}</span>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            leg.action === 'BUY' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
+                          }`}>
+                            {leg.action}
+                          </span>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            leg.optionType === 'CALL' ? 'bg-blue-900 text-blue-300' : 'bg-purple-900 text-purple-300'
+                          }`}>
+                            {leg.optionType}
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-5 gap-3">
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Action</label>
+                            <select
+                              value={leg.action}
+                              onChange={(e) => {
+                                const newLegs = [...tradeForm.legs];
+                                newLegs[index].action = e.target.value;
+                                setTradeForm(prev => ({ ...prev, legs: newLegs }));
+                              }}
+                              className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-white text-sm"
+                            >
+                              <option value="BUY">BUY</option>
+                              <option value="SELL">SELL</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Type</label>
+                            <select
+                              value={leg.optionType}
+                              onChange={(e) => {
+                                const newLegs = [...tradeForm.legs];
+                                newLegs[index].optionType = e.target.value;
+                                setTradeForm(prev => ({ ...prev, legs: newLegs }));
+                              }}
+                              className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-white text-sm"
+                            >
+                              <option value="CALL">CALL</option>
+                              <option value="PUT">PUT</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Strike</label>
+                            <input
+                              type="number"
+                              step="0.50"
+                              value={leg.strikePrice}
+                              onChange={(e) => {
+                                const newLegs = [...tradeForm.legs];
+                                newLegs[index].strikePrice = e.target.value;
+                                setTradeForm(prev => ({ ...prev, legs: newLegs }));
+                              }}
+                              className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-white text-sm"
+                              placeholder="155"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Premium</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={leg.premium}
+                              onChange={(e) => {
+                                const newLegs = [...tradeForm.legs];
+                                newLegs[index].premium = e.target.value;
+                                setTradeForm(prev => ({ ...prev, legs: newLegs }));
+                              }}
+                              className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-white text-sm"
+                              placeholder="2.50"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Qty</label>
+                            <input
+                              type="number"
+                              value={leg.quantity}
+                              onChange={(e) => {
+                                const newLegs = [...tradeForm.legs];
+                                newLegs[index].quantity = e.target.value;
+                                setTradeForm(prev => ({ ...prev, legs: newLegs }));
+                              }}
+                              className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-white text-sm"
+                              placeholder="1"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3">
+                          <label className="text-xs text-slate-400 mb-1 block">Expiration Date</label>
+                          <input
+                            type="date"
+                            value={leg.expirationDate}
+                            onChange={(e) => {
+                              const newLegs = [...tradeForm.legs];
+                              newLegs[index].expirationDate = e.target.value;
+                              setTradeForm(prev => ({ ...prev, legs: newLegs }));
+                            }}
+                            className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-white text-sm"
+                            min={new Date().toISOString().split('T')[0]}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Net Premium Display */}
+                  <div className="mt-4 p-3 bg-slate-600 rounded">
+                    <div className="text-sm text-slate-300">
+                      <strong>Net Premium:</strong> $
+                      {tradeForm.legs.reduce((sum, leg) => {
+                        const premium = parseFloat(leg.premium) || 0;
+                        const qty = parseFloat(leg.quantity) || 1;
+                        return sum + (leg.action === 'BUY' ? -premium * qty : premium * qty);
+                      }, 0).toFixed(2)}
+                      {' '}
+                      <span className="text-xs text-slate-400">
+                        ({tradeForm.legs.reduce((sum, leg) => sum + (leg.action === 'BUY' ? -1 : 1) * (parseFloat(leg.quantity) || 1), 0) > 0 ? 'NET CREDIT' : 'NET DEBIT'})
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1477,6 +1849,11 @@ export default function UltimateScanner() {
                         <td className="py-2 font-medium">
                           <div className="flex items-center gap-2">
                             <span>{trade.symbol}</span>
+                            {trade.assetType === 'MULTI_LEG_OPTION' && (
+                              <span className="text-xs bg-yellow-900 text-yellow-300 px-1 rounded" title={trade.strategyName}>
+                                {trade.strategyName?.split(' ')[0]}
+                              </span>
+                            )}
                             {trade.notes?.includes('Partial close') && (
                               <span className="text-xs bg-orange-900 text-orange-300 px-1 rounded" title={trade.notes}>
                                 Partial
@@ -1488,11 +1865,32 @@ export default function UltimateScanner() {
                               </span>
                             )}
                           </div>
+                          
+                          {/* Single Option Display */}
                           {trade.assetType === 'OPTION' && (
                             <div className="text-xs text-slate-400">
                               {trade.optionType} ${trade.strikePrice} {new Date(trade.expirationDate).toLocaleDateString()}
                             </div>
                           )}
+                          
+                          {/* Multi-leg Strategy Display */}
+                          {trade.assetType === 'MULTI_LEG_OPTION' && trade.legs && (
+                            <div className="text-xs text-slate-400 space-y-1 mt-1">
+                              {trade.legs.map((leg, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <span className={leg.action === 'BUY' ? 'text-green-400' : 'text-red-400'}>
+                                    {leg.action}
+                                  </span>
+                                  <span>{leg.quantity}x {leg.optionType} ${leg.strikePrice}</span>
+                                  <span className="text-slate-500">@${leg.entryPremium}</span>
+                                </div>
+                              ))}
+                              <div className="text-xs text-slate-500">
+                                Net: ${trade.netPremium} | Exp: {new Date(trade.legs[0]?.expirationDate).toLocaleDateString()}
+                              </div>
+                            </div>
+                          )}
+                          
                           {(trade.notes?.includes('close') || trade.notes?.includes('Remaining')) && (
                             <div className="text-xs text-slate-500 mt-1" title={trade.notes}>
                               {trade.notes.split('|')[0]}
