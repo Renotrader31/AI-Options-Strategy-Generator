@@ -10,10 +10,18 @@
     "dev": "node --watch src/index.js",
     "validate": "node src/validation/validateStrategies.js"
   },
-  "keywords": ["options", "trading", "strategies", "bull-put-spread"],
+  "keywords": [
+    "options",
+    "trading",
+    "strategies",
+    "bull-put-spread"
+  ],
   "author": "GenSpark AI Developer",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.0.0"
+  },
+  "dependencies": {
+    "pm2": "^6.0.10"
   }
 }
