@@ -48,12 +48,26 @@ export default function UltimateScanner() {
     'GOOGL', 'MSFT', 'NFLX', 'PLTR', 'SOFI', 'RIVN', 'NIO'
   ];
 
-  // Load initial data
+  // Load initial data and restore from localStorage
   useEffect(() => {
     fetchLiveData();
     fetchTrades();
     fetchAnalytics();
-  }, []);
+    
+    // Restore trades from localStorage if available
+    if (isClient) {
+      const savedTrades = localStorage.getItem('scannerProTrades');
+      if (savedTrades) {
+        try {
+          const parsedTrades = JSON.parse(savedTrades);
+          setTrades(parsedTrades);
+          console.log('📂 Restored', parsedTrades.length, 'trades from browser storage');
+        } catch (e) {
+          console.log('⚠️ Could not restore saved trades:', e);
+        }
+      }
+    }
+  }, [isClient]);
 
   // Fetch live market data
   const fetchLiveData = async () => {
@@ -289,6 +303,14 @@ export default function UltimateScanner() {
       if (result.success) {
         setSuccessMessage(`✅ Trade recorded successfully! ID: ${result.trade.id}`);
         
+        // Save to localStorage for persistence
+        const updatedTrades = [...trades, result.trade];
+        setTrades(updatedTrades);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('scannerProTrades', JSON.stringify(updatedTrades));
+          console.log('💾 Trade saved to browser storage');
+        }
+        
         // Reset form if quick save is not used
         if (!isQuickSave) {
           setTradeForm({
@@ -307,8 +329,7 @@ export default function UltimateScanner() {
           });
         }
         
-        // Refresh data
-        await fetchTrades();
+        // Refresh analytics
         await fetchAnalytics();
       } else {
         setError('Failed to record trade: ' + (result.error || 'Unknown error'));
@@ -353,8 +374,15 @@ export default function UltimateScanner() {
           `✅ Trade closed! P&L: $${result.trade.pnl?.toFixed(2)} (${result.trade.pnlPercent?.toFixed(2)}%)`
         );
         
-        // Refresh data
-        await fetchTrades();
+        // Update localStorage
+        const updatedTrades = trades.map(t => t.id === trade.id ? result.trade : t);
+        setTrades(updatedTrades);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('scannerProTrades', JSON.stringify(updatedTrades));
+          console.log('💾 Trade update saved to browser storage');
+        }
+        
+        // Refresh analytics
         await fetchAnalytics();
       } else {
         setError('Failed to close trade: ' + (result.error || 'Unknown error'));
@@ -1295,6 +1323,32 @@ export default function UltimateScanner() {
                 >
                   Quick Save
                 </button>
+              </div>
+              
+              {/* Data Persistence Info */}
+              <div className="mt-4 p-3 bg-blue-900/20 border border-blue-700 rounded">
+                <div className="text-sm text-blue-300 flex items-center gap-2">
+                  💾 <strong>Data Storage:</strong> Your trades are saved to your browser's local storage
+                </div>
+                <div className="text-xs text-blue-400 mt-1">
+                  • Trades persist between browser sessions • Data stays on this device • Clear browser data to reset
+                </div>
+                {trades.length > 0 && (
+                  <div className="mt-2">
+                    <button
+                      onClick={() => {
+                        if (confirm('Are you sure you want to clear all trade data? This cannot be undone.')) {
+                          localStorage.removeItem('scannerProTrades');
+                          setTrades([]);
+                          setSuccessMessage('🗑️ All trade data cleared');
+                        }
+                      }}
+                      className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+                    >
+                      Clear All Data
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
