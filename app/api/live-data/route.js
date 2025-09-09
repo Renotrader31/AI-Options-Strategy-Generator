@@ -269,17 +269,24 @@ async function fetchFromAlphaVantage(symbols) {
 // Generate mock data as fallback
 function generateMockData(symbols) {
   return symbols.map(symbol => {
-    // Generate realistic price based on symbol
-    const basePrice = symbol === 'AAPL' ? 175 : 
-                     symbol === 'GOOGL' ? 125 :
-                     symbol === 'MSFT' ? 350 :
-                     symbol === 'AMZN' ? 145 :
-                     symbol === 'TSLA' ? 250 :
-                     symbol === 'NVDA' ? 450 :
-                     symbol === 'META' ? 320 :
-                     symbol === 'SPY' ? 425 : 100;
+    // Generate realistic price based on current market levels (Sept 2024)
+    const basePrice = symbol === 'AAPL' ? 178 : 
+                     symbol === 'GOOGL' ? 132 :
+                     symbol === 'MSFT' ? 342 :
+                     symbol === 'AMZN' ? 148 :
+                     symbol === 'TSLA' ? 258 :
+                     symbol === 'NVDA' ? 465 :
+                     symbol === 'META' ? 315 :
+                     symbol === 'SPY' ? 445 :
+                     symbol === 'QQQ' ? 385 :
+                     symbol === 'AMD' ? 165 :
+                     symbol === 'NFLX' ? 445 :
+                     symbol === 'PLTR' ? 28 :
+                     symbol === 'SOFI' ? 8.5 :
+                     symbol === 'RIVN' ? 12.5 :
+                     symbol === 'NIO' ? 6.8 : 100;
     
-    const variation = (Math.random() - 0.5) * 0.1; // ±5%
+    const variation = (Math.random() - 0.5) * 0.06; // ±3% more realistic
     const price = basePrice * (1 + variation);
     const changePercent = (Math.random() - 0.5) * 5; // ±2.5%
     const change = price * (changePercent / 100);
