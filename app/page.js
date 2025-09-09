@@ -111,7 +111,7 @@ export default function UltimateScanner() {
     }
   };
 
-  // Handle ML analysis - FIXED FUNCTION
+  // Handle ML analysis - ENHANCED WITH BETTER DEBUGGING
   const handleMLAnalysis = async (symbol) => {
     if (!symbol) {
       setError('Please enter a symbol to analyze');
@@ -120,41 +120,51 @@ export default function UltimateScanner() {
 
     setLoading(true);
     setError(null);
+    setSuccessMessage(null); // Clear previous success messages
     
     try {
       console.log('🧠 Starting ML Analysis for:', symbol);
+      setSuccessMessage(`🔍 Analyzing ${symbol}... Please wait...`);
       
       // First try to get live data for the symbol
       let symbolData = null;
       if (liveData?.data) {
         symbolData = liveData.data.find(item => item.symbol === symbol);
+        console.log('📊 Found cached data for', symbol, ':', symbolData);
       }
       
-      // If no live data, create mock data for analysis
+      // If no live data, fetch fresh data
       if (!symbolData) {
-        console.log('📡 Fetching live data for', symbol);
+        console.log('📡 Fetching fresh live data for', symbol);
+        setSuccessMessage(`📡 Fetching market data for ${symbol}...`);
         try {
           const liveResponse = await fetch(`/api/live-data?symbols=${symbol}`);
           const liveResult = await liveResponse.json();
+          console.log('📊 Live data response:', liveResult);
           if (liveResult.success && liveResult.data.length > 0) {
             symbolData = liveResult.data[0];
+            console.log('✅ Successfully fetched data for', symbol);
           }
         } catch (liveError) {
-          console.log('⚠️ Live data fetch failed, using mock data');
+          console.error('⚠️ Live data fetch failed:', liveError);
+          setSuccessMessage(`⚠️ Live data unavailable, using demo data for ${symbol}...`);
         }
       }
       
       // Fallback to reasonable mock data if needed
       if (!symbolData) {
+        console.log('🔄 Creating mock data for', symbol);
         symbolData = {
           symbol: symbol,
           price: 100 + Math.random() * 400, // Random price between $100-500
           volume: Math.floor(Math.random() * 10000000) + 1000000,
           changePercent: (Math.random() * 10) - 5
         };
+        console.log('📊 Mock data created:', symbolData);
       }
 
-      console.log('📊 Using market data:', symbolData);
+      console.log('📊 Final market data for analysis:', symbolData);
+      setSuccessMessage(`🤖 Running AI analysis for ${symbol}...`);
 
       const response = await fetch('/api/ml-analysis', {
         method: 'POST',
@@ -167,18 +177,22 @@ export default function UltimateScanner() {
         })
       });
 
+      console.log('🌐 ML API Response status:', response.status);
       const data = await response.json();
       console.log('🤖 ML Analysis result:', data);
       
-      if (data.success) {
+      if (data.success && data.analysis) {
         setAnalysis(data.analysis);
-        setSuccessMessage(`✅ AI Analysis complete for ${symbol}! Scroll down to see recommendations.`);
+        setSuccessMessage(`✅ AI Analysis complete for ${symbol}! Found ${generateAdvancedStrategies(data.analysis).length} trading strategies. Scroll down to see recommendations.`);
+        console.log('✅ Analysis set successfully, strategies available');
       } else {
-        setError('Analysis failed: ' + (data.error || 'Unknown error'));
+        const errorMsg = data.error || data.message || 'Unknown error - check API response';
+        console.error('❌ Analysis failed:', errorMsg);
+        setError(`Analysis failed for ${symbol}: ${errorMsg}`);
       }
     } catch (err) {
       console.error('💥 ML Analysis error:', err);
-      setError('ML Analysis error: ' + err.message);
+      setError(`ML Analysis error for ${symbol}: ${err.message}. Please try again or check console for details.`);
     } finally {
       setLoading(false);
     }
@@ -720,12 +734,19 @@ export default function UltimateScanner() {
                       className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-right"
                     />
                     <button
-                      onClick={() => handleMLAnalysis(tradeForm.symbol || 'SPY')}
-                      disabled={loading}
+                      onClick={() => {
+                        const symbol = tradeForm.symbol || 'SPY';
+                        console.log('🔍 Manual Analyze button clicked for:', symbol);
+                        handleMLAnalysis(symbol);
+                      }}
+                      disabled={loading || !tradeForm.symbol}
                       className="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded font-medium disabled:opacity-50"
                     >
                       {loading ? 'Analyzing...' : '🔍 Analyze'}
                     </button>
+                    {!tradeForm.symbol && (
+                      <p className="text-xs text-yellow-400 mt-1">Enter a ticker symbol to analyze</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -883,7 +904,14 @@ export default function UltimateScanner() {
             {/* Live Market Data */}
             <div className="bg-slate-800 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">📊 Live Market Data</h3>
+                <div>
+                  <h3 className="text-lg font-semibold">📊 Live Market Data</h3>
+                  {liveData?.marketOpen === false && (
+                    <div className="text-xs text-yellow-400 mt-1">
+                      🕐 Markets Closed - Using Latest Available Data
+                    </div>
+                  )}
+                </div>
                 <button 
                   onClick={fetchLiveData}
                   className="text-blue-400 hover:text-blue-300 text-sm"
@@ -892,7 +920,7 @@ export default function UltimateScanner() {
                 </button>
               </div>
               
-              {liveData?.data && (
+              {liveData?.data && liveData.data.length > 0 ? (
                 <div className="space-y-3">
                   {liveData.data.slice(0, 6).map((stock, index) => (
                     <div 
@@ -903,6 +931,9 @@ export default function UltimateScanner() {
                       <div>
                         <div className="font-semibold">{stock.symbol}</div>
                         <div className="text-xs text-slate-400">${stock.price?.toFixed(2)}</div>
+                        {liveData?.source === 'MOCK' && (
+                          <div className="text-xs text-orange-400">📊 Demo Data</div>
+                        )}
                       </div>
                       <div className="text-right">
                         <div className={`text-sm font-medium ${
@@ -922,6 +953,16 @@ export default function UltimateScanner() {
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-slate-400 mb-2">📊 Loading Market Data...</div>
+                  <button 
+                    onClick={fetchLiveData}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+                  >
+                    Load Data
+                  </button>
                 </div>
               )}
             </div>
