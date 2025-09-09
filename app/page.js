@@ -371,10 +371,33 @@ export default function UltimateScanner() {
     console.log('📊 Local analytics calculated:', localAnalytics);
   };
 
-  // Handle closing a trade (local version)
+  // Handle closing a trade (enhanced with partial closes)
   const handleCloseTrade = async (trade) => {
+    // Step 1: Get quantity to close
+    const maxQuantity = trade.quantity || 0;
+    const quantityToClose = prompt(
+      `How many ${trade.assetType === 'OPTION' ? 'contracts' : 'shares'} do you want to close?\n\nCurrent position: ${maxQuantity}\nEnter quantity (or 'all' for full close):`,
+      maxQuantity.toString()
+    );
+    
+    if (!quantityToClose) {
+      return; // User cancelled
+    }
+    
+    let closeQty;
+    if (quantityToClose.toLowerCase() === 'all') {
+      closeQty = maxQuantity;
+    } else {
+      closeQty = parseInt(quantityToClose);
+      if (isNaN(closeQty) || closeQty <= 0 || closeQty > maxQuantity) {
+        setError(`Invalid quantity. Must be between 1 and ${maxQuantity}`);
+        return;
+      }
+    }
+    
+    // Step 2: Get exit price
     const currentPrice = prompt(
-      `Enter current ${trade.assetType === 'OPTION' ? 'premium' : 'price'} to close ${trade.symbol}:`,
+      `Enter current ${trade.assetType === 'OPTION' ? 'premium' : 'price'} to close ${closeQty} ${trade.assetType === 'OPTION' ? 'contracts' : 'shares'} of ${trade.symbol}:`,
       (trade.currentPrice || trade.entryPrice)?.toFixed(2)
     );
     
@@ -389,27 +412,53 @@ export default function UltimateScanner() {
       const exitPrice = parseFloat(currentPrice);
       const multiplier = trade.assetType === 'OPTION' ? 100 : 1; // Options multiply by 100
       
-      // Calculate P&L
-      let pnl, pnlPercent;
+      // Calculate P&L for the closed portion
+      let closePnl, closePnlPercent;
       if (trade.type === 'BUY' || trade.type === 'BUY_TO_OPEN') {
-        pnl = (exitPrice - trade.entryPrice) * trade.quantity * multiplier;
+        closePnl = (exitPrice - trade.entryPrice) * closeQty * multiplier;
       } else {
-        pnl = (trade.entryPrice - exitPrice) * trade.quantity * multiplier;
+        closePnl = (trade.entryPrice - exitPrice) * closeQty * multiplier;
       }
-      pnlPercent = (pnl / (trade.entryPrice * trade.quantity * multiplier)) * 100;
+      closePnlPercent = (closePnl / (trade.entryPrice * closeQty * multiplier)) * 100;
       
-      // Update trade with closing information
-      const updatedTrade = {
-        ...trade,
-        status: 'closed',
-        exitPrice: exitPrice,
-        exitDate: new Date().toISOString(),
-        pnl: Math.round(pnl * 100) / 100,
-        pnlPercent: Math.round(pnlPercent * 100) / 100
-      };
+      let updatedTrades;
       
-      // Update trades array
-      const updatedTrades = trades.map(t => t.id === trade.id ? updatedTrade : t);
+      if (closeQty === maxQuantity) {
+        // Full close - mark trade as closed
+        const updatedTrade = {
+          ...trade,
+          status: 'closed',
+          exitPrice: exitPrice,
+          exitDate: new Date().toISOString(),
+          pnl: Math.round(closePnl * 100) / 100,
+          pnlPercent: Math.round(closePnlPercent * 100) / 100
+        };
+        updatedTrades = trades.map(t => t.id === trade.id ? updatedTrade : t);
+        
+      } else {
+        // Partial close - create closed trade record + update remaining position
+        const closedTrade = {
+          ...trade,
+          id: `${trade.id}_close_${Date.now()}`, // New ID for closed portion
+          quantity: closeQty,
+          status: 'closed',
+          exitPrice: exitPrice,
+          exitDate: new Date().toISOString(),
+          pnl: Math.round(closePnl * 100) / 100,
+          pnlPercent: Math.round(closePnlPercent * 100) / 100,
+          notes: `Partial close of ${trade.id} (${closeQty}/${maxQuantity})` + (trade.notes ? ` | ${trade.notes}` : '')
+        };
+        
+        const remainingTrade = {
+          ...trade,
+          quantity: maxQuantity - closeQty,
+          notes: `Remaining position after partial close (${maxQuantity - closeQty}/${maxQuantity})` + (trade.notes ? ` | ${trade.notes}` : '')
+        };
+        
+        // Replace original trade with remaining position and add closed trade
+        updatedTrades = trades.map(t => t.id === trade.id ? remainingTrade : t);
+        updatedTrades.push(closedTrade);
+      }
       setTrades(updatedTrades);
       
       // Save to localStorage
@@ -418,8 +467,9 @@ export default function UltimateScanner() {
         console.log('💾 Trade closed and saved to browser storage');
       }
       
+      const closedPortion = closeQty === maxQuantity ? 'Full position' : `${closeQty}/${maxQuantity} ${trade.assetType === 'OPTION' ? 'contracts' : 'shares'}`;
       setSuccessMessage(
-        `✅ Trade closed! P&L: $${updatedTrade.pnl?.toFixed(2)} (${updatedTrade.pnlPercent?.toFixed(2)}%)`
+        `✅ ${closedPortion} closed! P&L: $${Math.round(closePnl * 100) / 100} (${Math.round(closePnlPercent * 100) / 100}%)${closeQty < maxQuantity ? ` | ${maxQuantity - closeQty} remaining` : ''}`
       );
       
       // Refresh analytics
@@ -1425,10 +1475,27 @@ export default function UltimateScanner() {
                     {trades.slice(0, 10).map(trade => (
                       <tr key={trade.id} className="border-b border-slate-700 hover:bg-slate-700/50">
                         <td className="py-2 font-medium">
-                          {trade.symbol}
+                          <div className="flex items-center gap-2">
+                            <span>{trade.symbol}</span>
+                            {trade.notes?.includes('Partial close') && (
+                              <span className="text-xs bg-orange-900 text-orange-300 px-1 rounded" title={trade.notes}>
+                                Partial
+                              </span>
+                            )}
+                            {trade.notes?.includes('Remaining position') && (
+                              <span className="text-xs bg-blue-900 text-blue-300 px-1 rounded" title={trade.notes}>
+                                Remaining
+                              </span>
+                            )}
+                          </div>
                           {trade.assetType === 'OPTION' && (
                             <div className="text-xs text-slate-400">
                               {trade.optionType} ${trade.strikePrice} {new Date(trade.expirationDate).toLocaleDateString()}
+                            </div>
+                          )}
+                          {(trade.notes?.includes('close') || trade.notes?.includes('Remaining')) && (
+                            <div className="text-xs text-slate-500 mt-1" title={trade.notes}>
+                              {trade.notes.split('|')[0]}
                             </div>
                           )}
                         </td>
@@ -1466,13 +1533,24 @@ export default function UltimateScanner() {
                         </td>
                         <td className="py-2 text-center">
                           {trade.status === 'active' && (
-                            <button
-                              onClick={() => handleCloseTrade(trade)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                              disabled={loading}
-                            >
-                              Close Trade
-                            </button>
+                            <div className="flex flex-col gap-1">
+                              <button
+                                onClick={() => handleCloseTrade(trade)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                disabled={loading}
+                                title={`Close some or all of ${trade.quantity} ${trade.assetType === 'OPTION' ? 'contracts' : 'shares'}`}
+                              >
+                                Close Position
+                              </button>
+                              <div className="text-xs text-slate-400">
+                                Qty: {trade.quantity}
+                              </div>
+                            </div>
+                          )}
+                          {trade.status === 'closed' && (
+                            <span className="text-xs text-slate-500">
+                              ✓ Closed
+                            </span>
                           )}
                         </td>
                       </tr>
