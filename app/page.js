@@ -51,20 +51,26 @@ export default function UltimateScanner() {
   // Load initial data and restore from localStorage
   useEffect(() => {
     fetchLiveData();
-    fetchTrades();
-    fetchAnalytics();
     
-    // Restore trades from localStorage if available
+    // Restore trades from localStorage if available (primary data source)
     if (isClient) {
+      console.log('🔄 Loading trades from localStorage...');
       const savedTrades = localStorage.getItem('scannerProTrades');
       if (savedTrades) {
         try {
           const parsedTrades = JSON.parse(savedTrades);
           setTrades(parsedTrades);
-          console.log('📂 Restored', parsedTrades.length, 'trades from browser storage');
+          calculateLocalAnalytics(parsedTrades);
+          console.log('📂 Restored', parsedTrades.length, 'trades from browser storage:', parsedTrades);
         } catch (e) {
           console.log('⚠️ Could not restore saved trades:', e);
+          setTrades([]);
+          calculateLocalAnalytics([]);
         }
+      } else {
+        console.log('📂 No saved trades found, starting fresh');
+        setTrades([]);
+        calculateLocalAnalytics([]);
       }
     }
   }, [isClient]);
@@ -289,51 +295,51 @@ export default function UltimateScanner() {
         tradeData.expirationDate = tradeForm.expirationDate;
       }
 
-      console.log('📝 Submitting trade:', tradeData);
+      console.log('📝 Creating trade locally:', tradeData);
       
-      const response = await fetch('/api/trades', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tradeData)
-      });
-
-      const result = await response.json();
-      console.log('💾 Trade submission result:', result);
+      // Create trade locally with localStorage (no server dependency)
+      const newTrade = {
+        id: Date.now().toString(), // Simple ID based on timestamp
+        ...tradeData,
+        entryDate: new Date().toISOString(),
+        currentPrice: tradeData.entryPrice, // Start with entry price
+        pnl: 0, // Initial P&L is zero
+        pnlPercent: 0 // Initial P&L percentage is zero
+      };
       
-      if (result.success) {
-        setSuccessMessage(`✅ Trade recorded successfully! ID: ${result.trade.id}`);
-        
-        // Save to localStorage for persistence
-        const updatedTrades = [...trades, result.trade];
-        setTrades(updatedTrades);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('scannerProTrades', JSON.stringify(updatedTrades));
-          console.log('💾 Trade saved to browser storage');
-        }
-        
-        // Reset form if quick save is not used
-        if (!isQuickSave) {
-          setTradeForm({
-            symbol: '',
-            assetType: 'STOCK',
-            type: 'BUY',
-            quantity: '',
-            price: '',
-            stopLoss: '',
-            takeProfit: '',
-            notes: '',
-            optionType: 'CALL',
-            strikePrice: '',
-            expirationDate: '',
-            premium: ''
-          });
-        }
-        
-        // Refresh analytics
-        await fetchAnalytics();
-      } else {
-        setError('Failed to record trade: ' + (result.error || 'Unknown error'));
+      console.log('💾 New trade created:', newTrade);
+      
+      // Save to localStorage immediately
+      const updatedTrades = [...trades, newTrade];
+      setTrades(updatedTrades);
+      
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('scannerProTrades', JSON.stringify(updatedTrades));
+        console.log('💾 Trade saved to browser storage - Total trades:', updatedTrades.length);
       }
+      
+      setSuccessMessage(`✅ Trade recorded successfully! ID: ${newTrade.id}`);
+      
+      // Reset form if quick save is not used
+      if (!isQuickSave) {
+        setTradeForm({
+          symbol: '',
+          assetType: 'STOCK',
+          type: 'BUY',
+          quantity: '',
+          price: '',
+          stopLoss: '',
+          takeProfit: '',
+          notes: '',
+          optionType: 'CALL',
+          strikePrice: '',
+          expirationDate: '',
+          premium: ''
+        });
+      }
+      
+      // Refresh analytics based on local data
+      calculateLocalAnalytics(updatedTrades);
     } catch (err) {
       console.error('💥 Trade submission error:', err);
       setError('Error recording trade: ' + err.message);
@@ -342,7 +348,30 @@ export default function UltimateScanner() {
     }
   };
 
-  // Handle closing a trade
+  // Calculate analytics from local trades data
+  const calculateLocalAnalytics = (tradesData) => {
+    const closedTrades = tradesData.filter(t => t.status === 'closed');
+    const activeTrades = tradesData.filter(t => t.status === 'active');
+    
+    const totalPnL = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+    const winningTrades = closedTrades.filter(t => t.pnl > 0).length;
+    const winRate = closedTrades.length > 0 ? (winningTrades / closedTrades.length) * 100 : 0;
+    
+    const localAnalytics = {
+      totalPnL: Math.round(totalPnL * 100) / 100,
+      winRate: Math.round(winRate * 10) / 10,
+      activeTrades: activeTrades.length,
+      closedTrades: closedTrades.length,
+      totalTrades: tradesData.length,
+      mlScore: 85.5, // Mock ML score
+      sharpeRatio: totalPnL > 0 ? 1.2 : 0.8 // Simple mock calculation
+    };
+    
+    setAnalytics(localAnalytics);
+    console.log('📊 Local analytics calculated:', localAnalytics);
+  };
+
+  // Handle closing a trade (local version)
   const handleCloseTrade = async (trade) => {
     const currentPrice = prompt(
       `Enter current ${trade.assetType === 'OPTION' ? 'premium' : 'price'} to close ${trade.symbol}:`,
@@ -357,36 +386,45 @@ export default function UltimateScanner() {
     setError(null);
     
     try {
-      const response = await fetch(`/api/trades/${trade.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'closed',
-          exitPrice: parseFloat(currentPrice),
-          exitDate: new Date().toISOString()
-        })
-      });
-
-      const result = await response.json();
+      const exitPrice = parseFloat(currentPrice);
+      const multiplier = trade.assetType === 'OPTION' ? 100 : 1; // Options multiply by 100
       
-      if (result.success) {
-        setSuccessMessage(
-          `✅ Trade closed! P&L: $${result.trade.pnl?.toFixed(2)} (${result.trade.pnlPercent?.toFixed(2)}%)`
-        );
-        
-        // Update localStorage
-        const updatedTrades = trades.map(t => t.id === trade.id ? result.trade : t);
-        setTrades(updatedTrades);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('scannerProTrades', JSON.stringify(updatedTrades));
-          console.log('💾 Trade update saved to browser storage');
-        }
-        
-        // Refresh analytics
-        await fetchAnalytics();
+      // Calculate P&L
+      let pnl, pnlPercent;
+      if (trade.type === 'BUY' || trade.type === 'BUY_TO_OPEN') {
+        pnl = (exitPrice - trade.entryPrice) * trade.quantity * multiplier;
       } else {
-        setError('Failed to close trade: ' + (result.error || 'Unknown error'));
+        pnl = (trade.entryPrice - exitPrice) * trade.quantity * multiplier;
       }
+      pnlPercent = (pnl / (trade.entryPrice * trade.quantity * multiplier)) * 100;
+      
+      // Update trade with closing information
+      const updatedTrade = {
+        ...trade,
+        status: 'closed',
+        exitPrice: exitPrice,
+        exitDate: new Date().toISOString(),
+        pnl: Math.round(pnl * 100) / 100,
+        pnlPercent: Math.round(pnlPercent * 100) / 100
+      };
+      
+      // Update trades array
+      const updatedTrades = trades.map(t => t.id === trade.id ? updatedTrade : t);
+      setTrades(updatedTrades);
+      
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('scannerProTrades', JSON.stringify(updatedTrades));
+        console.log('💾 Trade closed and saved to browser storage');
+      }
+      
+      setSuccessMessage(
+        `✅ Trade closed! P&L: $${updatedTrade.pnl?.toFixed(2)} (${updatedTrade.pnlPercent?.toFixed(2)}%)`
+      );
+      
+      // Refresh analytics
+      calculateLocalAnalytics(updatedTrades);
+      
     } catch (err) {
       console.error('💥 Close trade error:', err);
       setError('Error closing trade: ' + err.message);
@@ -1340,12 +1378,14 @@ export default function UltimateScanner() {
                         if (confirm('Are you sure you want to clear all trade data? This cannot be undone.')) {
                           localStorage.removeItem('scannerProTrades');
                           setTrades([]);
+                          calculateLocalAnalytics([]);
                           setSuccessMessage('🗑️ All trade data cleared');
+                          console.log('🗑️ Cleared all trade data from localStorage');
                         }
                       }}
                       className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
                     >
-                      Clear All Data
+                      Clear All Data ({trades.length} trades)
                     </button>
                   </div>
                 )}
