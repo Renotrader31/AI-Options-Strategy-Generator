@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple API Test</title>
+    <link rel="icon" href="data:,">
+</head>
+<body>
+    <h1>API Test Results</h1>
+    <div id="results"></div>
+    
+    <script>
+        const apiConfig = {
+            POLYGON_API_KEY: '75rlu6cWGNnIqqR_x8M384YUjBgGk6kT',
+            FMP_API_KEY: 'm2XfxOS0sZxs6hLEY5yRzUgDyp5Dur4V'
+        };
+
+        async function testAPI() {
+            const results = document.getElementById('results');
+            
+            try {
+                console.log('🧪 Starting API test...');
+                results.innerHTML += '<p>🧪 Starting API test...</p>';
+                
+                // Test Polygon first
+                console.log('📡 Testing Polygon API...');
+                results.innerHTML += '<p>📡 Testing Polygon API...</p>';
+                
+                const polygonUrl = `https://api.polygon.io/v2/aggs/ticker/AAPL/prev?adjusted=true&apikey=${apiConfig.POLYGON_API_KEY}`;
+                console.log('URL:', polygonUrl);
+                
+                const polygonResponse = await fetch(polygonUrl);
+                console.log('Polygon response status:', polygonResponse.status);
+                results.innerHTML += `<p>Polygon response status: ${polygonResponse.status}</p>`;
+                
+                if (polygonResponse.ok) {
+                    const polygonData = await polygonResponse.json();
+                    console.log('✅ Polygon data received:', polygonData);
+                    results.innerHTML += `<p>✅ Polygon Success! Price data available.</p>`;
+                    
+                    if (polygonData.results && polygonData.results.length > 0) {
+                        const price = polygonData.results[0].c;
+                        results.innerHTML += `<p>💰 AAPL Price: $${price}</p>`;
+                        console.log('💰 AAPL Price:', price);
+                    }
+                } else {
+                    const errorText = await polygonResponse.text();
+                    console.error('❌ Polygon error:', errorText);
+                    results.innerHTML += `<p>❌ Polygon Error: ${errorText}</p>`;
+                }
+                
+                // Test FMP as backup
+                console.log('📡 Testing FMP API...');
+                results.innerHTML += '<p>📡 Testing FMP API...</p>';
+                
+                const fmpUrl = `https://financialmodelingprep.com/api/v3/quote/AAPL?apikey=${apiConfig.FMP_API_KEY}`;
+                const fmpResponse = await fetch(fmpUrl);
+                console.log('FMP response status:', fmpResponse.status);
+                results.innerHTML += `<p>FMP response status: ${fmpResponse.status}</p>`;
+                
+                if (fmpResponse.ok) {
+                    const fmpData = await fmpResponse.json();
+                    console.log('✅ FMP data received:', fmpData);
+                    results.innerHTML += `<p>✅ FMP Success! Price data available.</p>`;
+                    
+                    if (fmpData && fmpData.length > 0) {
+                        const price = fmpData[0].price;
+                        results.innerHTML += `<p>💰 AAPL Price (FMP): $${price}</p>`;
+                        console.log('💰 AAPL Price (FMP):', price);
+                    }
+                } else {
+                    const errorText = await fmpResponse.text();
+                    console.error('❌ FMP error:', errorText);
+                    results.innerHTML += `<p>❌ FMP Error: ${errorText}</p>`;
+                }
+                
+            } catch (error) {
+                console.error('🚨 Test failed:', error);
+                results.innerHTML += `<p>🚨 Test Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run test immediately
+        testAPI();
+    </script>
+</body>
+</html>

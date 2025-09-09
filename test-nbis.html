@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test NBIS Real-Time Price</title>
+    <link rel="icon" href="data:,">
+</head>
+<body>
+    <h1>🧪 Testing NBIS Real-Time Price</h1>
+    <div id="results"></div>
+
+    <script>
+        async function testAllSources() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>🔄 Testing multiple data sources for NBIS...</p>';
+            
+            const sources = [
+                {
+                    name: 'FMP Standard Quote',
+                    url: 'https://financialmodelingprep.com/api/v3/quote/NBIS?apikey=m2XfxOS0sZxs6hLEY5yRzUgDyp5Dur4V',
+                    parser: (data) => data[0]
+                },
+                {
+                    name: 'FMP Real-time (Short)',
+                    url: 'https://financialmodelingprep.com/api/v3/quote-short/NBIS?apikey=m2XfxOS0sZxs6hLEY5yRzUgDyp5Dur4V',
+                    parser: (data) => data[0]
+                },
+                {
+                    name: 'Polygon Previous Day',
+                    url: 'https://api.polygon.io/v2/aggs/ticker/NBIS/prev?adjusted=true&apikey=75rlu6cWGNnIqqR_x8M384YUjBgGk6kT',
+                    parser: (data) => data.results ? data.results[0] : null
+                }
+            ];
+            
+            let resultHTML = '<h2>📊 NBIS Price Comparison:</h2>';
+            
+            for (const source of sources) {
+                try {
+                    console.log(`Testing ${source.name}...`);
+                    const response = await fetch(source.url);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const parsed = source.parser(data);
+                        
+                        if (parsed) {
+                            let price, volume, timestamp;
+                            
+                            if (source.name.includes('Polygon')) {
+                                price = parsed.c;
+                                volume = parsed.v;
+                                timestamp = new Date(parsed.t);
+                            } else {
+                                price = parsed.price;
+                                volume = parsed.volume;
+                                timestamp = new Date();
+                            }
+                            
+                            resultHTML += `
+                                <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px;">
+                                    <h3>${source.name}</h3>
+                                    <p><strong>Price:</strong> $${price}</p>
+                                    <p><strong>Volume:</strong> ${volume?.toLocaleString() || 'N/A'}</p>
+                                    <p><strong>Timestamp:</strong> ${timestamp.toLocaleString()}</p>
+                                    <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        resultHTML += `
+                            <div style="border: 1px solid #f00; padding: 15px; margin: 10px 0; border-radius: 8px;">
+                                <h3>${source.name}</h3>
+                                <p>❌ Failed: ${response.status} ${response.statusText}</p>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    resultHTML += `
+                        <div style="border: 1px solid #f00; padding: 15px; margin: 10px 0; border-radius: 8px;">
+                            <h3>${source.name}</h3>
+                            <p>❌ Error: ${error.message}</p>
+                        </div>
+                    `;
+                }
+                
+                // Add small delay between requests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            resultHTML += `
+                <div style="background: #fff3cd; padding: 15px; margin: 20px 0; border-radius: 8px;">
+                    <h3>📝 Analysis:</h3>
+                    <p>If all sources show similar prices around $64, this confirms they're returning <strong>previous day close</strong> data.</p>
+                    <p>For real-time data showing ~$90, you'll need:</p>
+                    <ul>
+                        <li>Paid FMP API key for real-time quotes</li>
+                        <li>Or Polygon real-time data subscription</li>
+                        <li>Or other real-time data provider</li>
+                    </ul>
+                </div>
+            `;
+            
+            results.innerHTML = resultHTML;
+        }
+        
+        // Auto-run test
+        testAllSources();
+    </script>
+</body>
+</html>

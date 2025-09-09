@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .log { background: #f0f0f0; padding: 10px; margin: 5px 0; border-radius: 4px; }
+        .error { background: #ffe6e6; border-left: 4px solid #ff0000; }
+        .success { background: #e6ffe6; border-left: 4px solid #00aa00; }
+        .info { background: #e6f3ff; border-left: 4px solid #0088cc; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; width: 100px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 API Test Tool</h1>
+    
+    <div>
+        <input type="text" id="ticker" placeholder="AAPL" value="AAPL">
+        <button onclick="testPolygon()">Test Polygon API</button>
+        <button onclick="testFMP()">Test FMP API</button>
+        <button onclick="testBoth()">Test Both</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+    
+    <div id="logs"></div>
+
+    <script>
+        // API Configuration - Same as in main app
+        const apiConfig = {
+            POLYGON_API_KEY: '75rlu6cWGNnIqqR_x8M384YUjBgGk6kT',
+            FMP_API_KEY: 'm2XfxOS0sZxs6hLEY5yRzUgDyp5Dur4V'
+        };
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.className = `log ${type}`;
+            entry.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function testPolygon() {
+            const ticker = document.getElementById('ticker').value || 'AAPL';
+            log(`🔍 Testing Polygon API for ${ticker}...`, 'info');
+            
+            try {
+                const apiKey = apiConfig.POLYGON_API_KEY;
+                const url = `https://api.polygon.io/v2/aggs/ticker/${ticker.toUpperCase()}/prev?adjusted=true&apikey=${apiKey}`;
+                
+                log(`📡 Fetching: ${url}`, 'info');
+                
+                const response = await fetch(url);
+                
+                log(`📊 Response Status: ${response.status} ${response.statusText}`, 
+                    response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`❌ Polygon Error: ${errorText}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                log(`✅ Polygon Success: ${JSON.stringify(data, null, 2)}`, 'success');
+                
+                if (data.results && data.results.length > 0) {
+                    const result = data.results[0];
+                    log(`💰 ${ticker} Price: $${result.c} (Change: ${((result.c - result.o) / result.o * 100).toFixed(2)}%)`, 'success');
+                }
+                
+            } catch (error) {
+                log(`❌ Polygon Fetch Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFMP() {
+            const ticker = document.getElementById('ticker').value || 'AAPL';
+            log(`🔍 Testing FMP API for ${ticker}...`, 'info');
+            
+            try {
+                const apiKey = apiConfig.FMP_API_KEY;
+                const url = `https://financialmodelingprep.com/api/v3/quote/${ticker.toUpperCase()}?apikey=${apiKey}`;
+                
+                log(`📡 Fetching: ${url}`, 'info');
+                
+                const response = await fetch(url);
+                
+                log(`📊 Response Status: ${response.status} ${response.statusText}`, 
+                    response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`❌ FMP Error: ${errorText}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                log(`✅ FMP Success: ${JSON.stringify(data, null, 2)}`, 'success');
+                
+                if (data && data.length > 0) {
+                    const result = data[0];
+                    log(`💰 ${ticker} Price: $${result.price} (Change: ${result.changesPercentage}%)`, 'success');
+                }
+                
+            } catch (error) {
+                log(`❌ FMP Fetch Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBoth() {
+            await testPolygon();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+            await testFMP();
+        }
+
+        // Auto-run test on page load
+        window.onload = function() {
+            log('🚀 API Test Tool Ready', 'info');
+            log(`📋 Testing with APIs:`, 'info');
+            log(`  • Polygon: ${apiConfig.POLYGON_API_KEY ? '✅ Configured' : '❌ Missing'}`, 'info');
+            log(`  • FMP: ${apiConfig.FMP_API_KEY ? '✅ Configured' : '❌ Missing'}`, 'info');
+        };
+    </script>
+</body>
+</html>
