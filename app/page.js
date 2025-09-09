@@ -19,6 +19,12 @@ export default function UltimateScanner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [isClient, setIsClient] = useState(false);
+
+  // Fix hydration issue
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Trade form state
   const [tradeForm, setTradeForm] = useState({
@@ -188,6 +194,148 @@ export default function UltimateScanner() {
       if (symbolData) {
         setTradeForm(prev => ({ ...prev, price: symbolData.price.toString() }));
       }
+    }
+  };
+
+  // Handle trade submission
+  const handleTradeSubmit = async (isQuickSave = false) => {
+    if (!tradeForm.symbol) {
+      setError('Please enter a symbol');
+      return;
+    }
+    if (!tradeForm.quantity) {
+      setError('Please enter quantity');
+      return;
+    }
+    if (!tradeForm.price && !tradeForm.premium) {
+      setError('Please enter price/premium');
+      return;
+    }
+
+    // Validate options-specific fields
+    if (tradeForm.assetType === 'OPTION') {
+      if (!tradeForm.strikePrice) {
+        setError('Please enter strike price for options');
+        return;
+      }
+      if (!tradeForm.expirationDate) {
+        setError('Please enter expiration date for options');
+        return;
+      }
+    }
+
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const tradeData = {
+        symbol: tradeForm.symbol,
+        assetType: tradeForm.assetType,
+        type: tradeForm.type,
+        quantity: parseInt(tradeForm.quantity),
+        entryPrice: parseFloat(tradeForm.assetType === 'OPTION' ? tradeForm.premium : tradeForm.price),
+        stopLoss: tradeForm.stopLoss ? parseFloat(tradeForm.stopLoss) : null,
+        takeProfit: tradeForm.takeProfit ? parseFloat(tradeForm.takeProfit) : null,
+        notes: tradeForm.notes || 'Portfolio Tracker Entry',
+        status: 'active'
+      };
+
+      // Add options-specific fields
+      if (tradeForm.assetType === 'OPTION') {
+        tradeData.optionType = tradeForm.optionType;
+        tradeData.strikePrice = parseFloat(tradeForm.strikePrice);
+        tradeData.expirationDate = tradeForm.expirationDate;
+      }
+
+      console.log('📝 Submitting trade:', tradeData);
+      
+      const response = await fetch('/api/trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tradeData)
+      });
+
+      const result = await response.json();
+      console.log('💾 Trade submission result:', result);
+      
+      if (result.success) {
+        setSuccessMessage(`✅ Trade recorded successfully! ID: ${result.trade.id}`);
+        
+        // Reset form if quick save is not used
+        if (!isQuickSave) {
+          setTradeForm({
+            symbol: '',
+            assetType: 'STOCK',
+            type: 'BUY',
+            quantity: '',
+            price: '',
+            stopLoss: '',
+            takeProfit: '',
+            notes: '',
+            optionType: 'CALL',
+            strikePrice: '',
+            expirationDate: '',
+            premium: ''
+          });
+        }
+        
+        // Refresh data
+        await fetchTrades();
+        await fetchAnalytics();
+      } else {
+        setError('Failed to record trade: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('💥 Trade submission error:', err);
+      setError('Error recording trade: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle closing a trade
+  const handleCloseTrade = async (trade) => {
+    const currentPrice = prompt(
+      `Enter current ${trade.assetType === 'OPTION' ? 'premium' : 'price'} to close ${trade.symbol}:`,
+      (trade.currentPrice || trade.entryPrice)?.toFixed(2)
+    );
+    
+    if (!currentPrice || isNaN(parseFloat(currentPrice))) {
+      return; // User cancelled or invalid input
+    }
+
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`/api/trades/${trade.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'closed',
+          exitPrice: parseFloat(currentPrice),
+          exitDate: new Date().toISOString()
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setSuccessMessage(
+          `✅ Trade closed! P&L: $${result.trade.pnl?.toFixed(2)} (${result.trade.pnlPercent?.toFixed(2)}%)`
+        );
+        
+        // Refresh data
+        await fetchTrades();
+        await fetchAnalytics();
+      } else {
+        setError('Failed to close trade: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('💥 Close trade error:', err);
+      setError('Error closing trade: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -422,6 +570,7 @@ export default function UltimateScanner() {
             {[
               { id: 'scanner', label: '🔍 Mass Scanner', icon: '🔍' },
               { id: 'ml', label: '🤖 ML Trading System', icon: '🤖' },
+              { id: 'portfolio', label: '💼 Portfolio Tracker', icon: '💼' },
               { id: 'options', label: '📈 Options Flow', icon: '📈' }
             ].map(tab => (
               <button
@@ -534,7 +683,7 @@ export default function UltimateScanner() {
                   <span className="text-blue-400 text-lg">🧠</span>
                   <h3 className="text-lg font-semibold text-blue-400">AI Trading Engine</h3>
                   <span className="text-xs text-slate-400 bg-slate-700 px-2 py-1 rounded">
-                    Updated {new Date().toLocaleTimeString()}
+                    {isClient ? `Updated ${new Date().toLocaleTimeString()}` : 'Loading...'}
                   </span>
                 </div>
                 
@@ -776,6 +925,414 @@ export default function UltimateScanner() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Portfolio Tracker Tab Content */}
+        {activeTab === 'portfolio' && (
+          <div className="space-y-6">
+            {/* Portfolio Header */}
+            <div className="bg-slate-800 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-green-400 mb-1">
+                    💼 Portfolio Tracker
+                  </h2>
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                    <span className="font-medium text-green-400">Live P&L Tracking with Options Support</span>
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => {
+                    fetchTrades(null, true);
+                    fetchAnalytics();
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  disabled={loading}
+                >
+                  {loading ? '🔄 Updating...' : '📊 Refresh P&L'}
+                </button>
+              </div>
+
+              {/* Portfolio Performance Metrics */}
+              {analytics && (
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-green-400 mb-1">
+                      <span className="text-lg">💰</span>
+                    </div>
+                    <div className="text-sm text-slate-400">Total P&L</div>
+                    <div className={`text-xl font-bold ${analytics.totalPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      ${analytics.totalPnL?.toLocaleString()}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-yellow-400 mb-1">
+                      <span className="text-lg">🏆</span>
+                    </div>
+                    <div className="text-sm text-slate-400">Win Rate</div>
+                    <div className="text-xl font-bold text-yellow-400">
+                      {analytics.winRate?.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {analytics.closedTrades} trades closed
+                    </div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-blue-400 mb-1">
+                      <span className="text-lg">📈</span>
+                    </div>
+                    <div className="text-sm text-slate-400">Active Positions</div>
+                    <div className="text-xl font-bold text-blue-400">
+                      {analytics.activeTrades}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-purple-400 mb-1">
+                      <span className="text-lg">📊</span>
+                    </div>
+                    <div className="text-sm text-slate-400">Sharpe Ratio</div>
+                    <div className="text-xl font-bold text-purple-400">
+                      {analytics.sharpeRatio?.toFixed(2)}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-orange-400 mb-1">
+                      <span className="text-lg">⏳</span>
+                    </div>
+                    <div className="text-sm text-slate-400">Total Trades</div>
+                    <div className="text-xl font-bold text-orange-400">
+                      {analytics.totalTrades}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Trade Entry Form */}
+            <div className="bg-slate-800 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                📝 Record New Trade
+              </h3>
+              
+              {/* Popular Symbols */}
+              <div className="mb-6">
+                <label className="text-sm text-slate-400 mb-2 block">Popular Symbols:</label>
+                <div className="flex flex-wrap gap-2">
+                  {popularSymbols.map(symbol => (
+                    <button
+                      key={symbol}
+                      onClick={() => selectSymbol(symbol)}
+                      className={`px-3 py-1 text-xs rounded font-medium transition-colors ${
+                        tradeForm.symbol === symbol
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      {symbol}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Asset Type Selection */}
+              <div className="mb-6">
+                <label className="text-sm text-slate-400 mb-2 block">Asset Type</label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setTradeForm(prev => ({ ...prev, assetType: 'STOCK', type: 'BUY' }))}
+                    className={`px-4 py-2 rounded font-medium transition-colors ${
+                      tradeForm.assetType === 'STOCK'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    📈 Stocks
+                  </button>
+                  <button
+                    onClick={() => setTradeForm(prev => ({ ...prev, assetType: 'OPTION', type: 'BUY_TO_OPEN' }))}
+                    className={`px-4 py-2 rounded font-medium transition-colors ${
+                      tradeForm.assetType === 'OPTION'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    ⚡ Options
+                  </button>
+                </div>
+              </div>
+
+              {/* Trade Form */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Symbol</label>
+                  <input
+                    type="text"
+                    value={tradeForm.symbol}
+                    onChange={(e) => setTradeForm(prev => ({ ...prev, symbol: e.target.value.toUpperCase() }))}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                    placeholder={tradeForm.assetType === 'OPTION' ? 'AAPL (underlying)' : 'AAPL'}
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Action</label>
+                  <select
+                    value={tradeForm.type}
+                    onChange={(e) => setTradeForm(prev => ({ ...prev, type: e.target.value }))}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                  >
+                    {tradeForm.assetType === 'STOCK' ? (
+                      <>
+                        <option value="BUY">BUY</option>
+                        <option value="SELL">SELL</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="BUY_TO_OPEN">Buy to Open</option>
+                        <option value="SELL_TO_OPEN">Sell to Open</option>
+                        <option value="BUY_TO_CLOSE">Buy to Close</option>
+                        <option value="SELL_TO_CLOSE">Sell to Close</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">
+                    Quantity {tradeForm.assetType === 'OPTION' ? '(Contracts)' : '(Shares)'}
+                  </label>
+                  <input
+                    type="number"
+                    value={tradeForm.quantity}
+                    onChange={(e) => setTradeForm(prev => ({ ...prev, quantity: e.target.value }))}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                    placeholder={tradeForm.assetType === 'OPTION' ? '10' : '100'}
+                  />
+                </div>
+              </div>
+
+              {/* Options-specific fields */}
+              {tradeForm.assetType === 'OPTION' && (
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <label className="text-sm text-slate-400 mb-1 block">Option Type</label>
+                    <select
+                      value={tradeForm.optionType}
+                      onChange={(e) => setTradeForm(prev => ({ ...prev, optionType: e.target.value }))}
+                      className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                    >
+                      <option value="CALL">📈 Call</option>
+                      <option value="PUT">📉 Put</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm text-slate-400 mb-1 block">Strike Price</label>
+                    <input
+                      type="number"
+                      step="0.50"
+                      value={tradeForm.strikePrice}
+                      onChange={(e) => setTradeForm(prev => ({ ...prev, strikePrice: e.target.value }))}
+                      className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                      placeholder="155.00"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm text-slate-400 mb-1 block">Expiration Date</label>
+                    <input
+                      type="date"
+                      value={tradeForm.expirationDate}
+                      onChange={(e) => setTradeForm(prev => ({ ...prev, expirationDate: e.target.value }))}
+                      className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">
+                    {tradeForm.assetType === 'OPTION' ? 'Premium' : 'Price'}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={tradeForm.assetType === 'OPTION' ? tradeForm.premium : tradeForm.price}
+                    onChange={(e) => setTradeForm(prev => ({
+                      ...prev,
+                      [tradeForm.assetType === 'OPTION' ? 'premium' : 'price']: e.target.value
+                    }))}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                    placeholder={tradeForm.assetType === 'OPTION' ? '2.50' : '150.00'}
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Stop Loss</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={tradeForm.stopLoss}
+                    onChange={(e) => setTradeForm(prev => ({ ...prev, stopLoss: e.target.value }))}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                    placeholder="140.00"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Take Profit</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={tradeForm.takeProfit}
+                    onChange={(e) => setTradeForm(prev => ({ ...prev, takeProfit: e.target.value }))}
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                    placeholder="160.00"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="text-sm text-slate-400 mb-1 block">Notes (Optional)</label>
+                <textarea
+                  value={tradeForm.notes}
+                  onChange={(e) => setTradeForm(prev => ({ ...prev, notes: e.target.value }))}
+                  className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                  rows="2"
+                  placeholder="ML recommendation, technical setup, etc."
+                />
+              </div>
+
+              {error && (
+                <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-2 rounded mb-4">
+                  {error}
+                </div>
+              )}
+
+              {successMessage && (
+                <div className="bg-green-900 border border-green-700 text-green-300 px-4 py-2 rounded mb-4">
+                  {successMessage}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleTradeSubmit(false)}
+                  disabled={loading}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium disabled:opacity-50"
+                >
+                  {loading ? 'Recording...' : 'Record Trade'}
+                </button>
+                
+                <button
+                  onClick={() => handleTradeSubmit(true)}
+                  disabled={loading}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-medium disabled:opacity-50"
+                >
+                  Quick Save
+                </button>
+              </div>
+            </div>
+
+            {/* Active Trades Table */}
+            {trades.length > 0 && (
+              <div className="bg-slate-800 rounded-lg p-6">
+                <div className="mb-4 flex justify-between items-center">
+                  <h3 className="text-lg font-medium">Active Positions</h3>
+                  <button
+                    onClick={() => fetchTrades(null, true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+                    disabled={loading}
+                  >
+                    {loading ? '🔄 Updating...' : '📊 Refresh Live P&L'}
+                  </button>
+                </div>
+                
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-slate-400 border-b border-slate-700">
+                      <th className="text-left py-2">Symbol</th>
+                      <th className="text-left py-2">Type</th>
+                      <th className="text-right py-2">Quantity</th>
+                      <th className="text-right py-2">Entry Price</th>
+                      <th className="text-right py-2">Current Price</th>
+                      <th className="text-right py-2">P&L</th>
+                      <th className="text-right py-2">%</th>
+                      <th className="text-left py-2">Status</th>
+                      <th className="text-center py-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trades.slice(0, 10).map(trade => (
+                      <tr key={trade.id} className="border-b border-slate-700 hover:bg-slate-700/50">
+                        <td className="py-2 font-medium">
+                          {trade.symbol}
+                          {trade.assetType === 'OPTION' && (
+                            <div className="text-xs text-slate-400">
+                              {trade.optionType} ${trade.strikePrice} {new Date(trade.expirationDate).toLocaleDateString()}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-2">
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            trade.type.includes('BUY') ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
+                          }`}>
+                            {trade.type}
+                          </span>
+                          <div className="text-xs text-slate-400">{trade.assetType}</div>
+                        </td>
+                        <td className="py-2 text-right">{trade.quantity}</td>
+                        <td className="py-2 text-right">${trade.entryPrice?.toFixed(2)}</td>
+                        <td className="py-2 text-right">
+                          ${(trade.currentPrice || trade.exitPrice || trade.entryPrice)?.toFixed(2)}
+                        </td>
+                        <td className={`py-2 text-right font-medium ${
+                          trade.pnl > 0 ? 'text-green-400' : trade.pnl < 0 ? 'text-red-400' : 'text-slate-400'
+                        }`}>
+                          ${trade.pnl?.toFixed(2)}
+                        </td>
+                        <td className={`py-2 text-right font-medium ${
+                          trade.pnlPercent > 0 ? 'text-green-400' : trade.pnlPercent < 0 ? 'text-red-400' : 'text-slate-400'
+                        }`}>
+                          {trade.pnlPercent?.toFixed(2)}%
+                        </td>
+                        <td className="py-2">
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            trade.status === 'active' ? 'bg-blue-900 text-blue-300' :
+                            trade.status === 'closed' ? 'bg-gray-900 text-gray-300' :
+                            'bg-yellow-900 text-yellow-300'
+                          }`}>
+                            {trade.status}
+                          </span>
+                        </td>
+                        <td className="py-2 text-center">
+                          {trade.status === 'active' && (
+                            <button
+                              onClick={() => handleCloseTrade(trade)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                              disabled={loading}
+                            >
+                              Close Trade
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              </div>
+            )}
           </div>
         )}
 
