@@ -222,3 +222,5 @@ OSError: [Errno 98] Address already in use
 10.12.54.80 - - [09/Sep/2025 16:00:41] "GET /minimal-test.html HTTP/1.1" 200 -
 10.12.54.80 - - [09/Sep/2025 16:01:44] "GET / HTTP/1.1" 200 -
 10.12.54.80 - - [09/Sep/2025 16:03:36] "GET / HTTP/1.1" 200 -
+10.12.54.80 - - [09/Sep/2025 16:13:09] "GET / HTTP/1.1" 200 -
+10.12.54.80 - - [09/Sep/2025 16:18:00] "GET /test-nbis.html HTTP/1.1" 200 -
