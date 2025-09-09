@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal Test</title>
+    <link rel="icon" href="data:,">
+</head>
+<body>
+    <h1>Simple Test</h1>
+    <button onclick="test()">Click Test</button>
+    <div id="result"></div>
+
+    <script>
+        function test() {
+            document.getElementById('result').innerHTML = 'Button works!';
+            console.log('✅ Button clicked successfully');
+        }
+        
+        console.log('✅ Script loaded');
+    </script>
+</body>
+</html>

@@ -214,3 +214,11 @@ OSError: [Errno 98] Address already in use
 10.12.54.80 - - [09/Sep/2025 15:53:15] "GET / HTTP/1.1" 200 -
 10.12.54.80 - - [09/Sep/2025 15:53:15] code 404, message File not found
 10.12.54.80 - - [09/Sep/2025 15:53:15] "GET /favicon.ico HTTP/1.1" 404 -
+10.12.54.80 - - [09/Sep/2025 15:54:53] "GET / HTTP/1.1" 200 -
+10.12.54.80 - - [09/Sep/2025 15:54:53] code 404, message File not found
+10.12.54.80 - - [09/Sep/2025 15:54:53] "GET /favicon.ico HTTP/1.1" 404 -
+10.12.54.80 - - [09/Sep/2025 15:57:40] "GET /test-fix.html HTTP/1.1" 200 -
+10.12.54.80 - - [09/Sep/2025 16:00:20] "GET /index-fixed.html HTTP/1.1" 200 -
+10.12.54.80 - - [09/Sep/2025 16:00:41] "GET /minimal-test.html HTTP/1.1" 200 -
+10.12.54.80 - - [09/Sep/2025 16:01:44] "GET / HTTP/1.1" 200 -
+10.12.54.80 - - [09/Sep/2025 16:03:36] "GET / HTTP/1.1" 200 -
