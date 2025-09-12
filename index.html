@@ -671,6 +671,180 @@
                 transform: translateY(0);
             }
         }
+
+        /* === DATA MANAGEMENT PANEL === */
+        .data-management-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 350px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-accent);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            animation: slideInRight 0.3s ease;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-primary);
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-card));
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            color: var(--text-accent);
+            font-size: 16px;
+        }
+
+        .close-panel-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .close-panel-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .panel-content {
+            padding: 20px;
+        }
+
+        .backup-section, .version-section, .settings-section, .info-section {
+            margin-bottom: 20px;
+        }
+
+        .backup-section h4, .version-section h4, .settings-section h4 {
+            margin: 0 0 10px 0;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .backup-btn {
+            display: block;
+            width: 100%;
+            padding: 10px 15px;
+            margin: 8px 0;
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .backup-btn:hover {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-color: var(--accent-primary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .backup-btn.danger:hover {
+            background: linear-gradient(135deg, var(--accent-danger), #dc2626);
+            border-color: var(--accent-danger);
+        }
+
+        .data-panel-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .data-panel-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-neon);
+        }
+
+        .info-section {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        .info-section small {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        #versionList {
+            max-height: 120px;
+            overflow-y: auto;
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            padding: 8px;
+            background: var(--bg-tertiary);
+        }
+
+        .version-item {
+            padding: 6px 8px;
+            margin: 4px 0;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .version-item:hover {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Mobile responsive for data panel */
+        @media (max-width: 768px) {
+            .data-management-panel {
+                width: calc(100vw - 40px);
+                left: 20px;
+                right: 20px;
+            }
+            
+            .data-panel-toggle {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -694,6 +868,59 @@
             </div>
         </div>
         
+        <!-- === DATA MANAGEMENT PANEL === -->
+        <div class="data-management-panel" id="dataPanel" style="display: none;">
+            <div class="panel-header">
+                <h3>📊 Data Management & Backup</h3>
+                <button class="close-panel-btn" onclick="toggleDataPanel()">×</button>
+            </div>
+            <div class="panel-content">
+                <div class="backup-section">
+                    <h4>💾 Backup & Export</h4>
+                    <button class="backup-btn" onclick="dataManager.exportData()">
+                        📤 Export All Data
+                    </button>
+                    <button class="backup-btn" onclick="document.getElementById('importFile').click()">
+                        📥 Import Backup
+                    </button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;" 
+                           onchange="dataManager.importData(this.files[0])">
+                </div>
+                
+                <div class="version-section">
+                    <h4>🔄 Version History</h4>
+                    <div id="versionList"></div>
+                    <button class="backup-btn" onclick="showVersionHistory()">
+                        📚 View All Versions
+                    </button>
+                </div>
+                
+                <div class="settings-section">
+                    <h4>⚙️ Settings</h4>
+                    <button class="backup-btn" onclick="dataManager.forceSave()">
+                        💾 Force Save Now
+                    </button>
+                    <button class="backup-btn danger" onclick="dataManager.clearAllData()">
+                        🗑️ Clear All Data
+                    </button>
+                </div>
+                
+                <div class="info-section">
+                    <small>
+                        📝 <strong>Auto-save:</strong> Every 5 seconds<br>
+                        🔐 <strong>Storage:</strong> Browser localStorage<br>
+                        📚 <strong>Versions:</strong> Last 10 saves kept<br>
+                        ⌨️ <strong>Hotkey:</strong> Ctrl+S to manual save
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- === DATA PANEL TOGGLE BUTTON === -->
+        <button class="data-panel-toggle" onclick="toggleDataPanel()" title="Data Management">
+            💾
+        </button>
+
         <!-- === RESULTS SECTION === -->
         <div class="results" id="results"></div>
     </div>
@@ -1306,12 +1533,505 @@
             }
         });
 
+        // ===== DATA PERSISTENCE SYSTEM =====
+        class DataPersistenceManager {
+            constructor() {
+                this.storageKey = 'ai_options_strategies';
+                this.backupKey = 'ai_options_backup';
+                this.versionsKey = 'ai_options_versions';
+                this.maxVersions = 10;
+                this.autoSaveInterval = 5000; // 5 seconds
+                this.init();
+            }
+
+            init() {
+                this.loadUserData();
+                this.startAutoSave();
+                this.setupBeforeUnloadWarning();
+                console.log('🔐 Data Persistence Manager initialized');
+            }
+
+            // Core data structure
+            getUserData() {
+                return {
+                    timestamp: Date.now(),
+                    version: '1.0',
+                    userInputs: {
+                        lastTicker: document.getElementById('tickerInput')?.value || '',
+                        searchHistory: this.getSearchHistory(),
+                    },
+                    generatedStrategies: this.getGeneratedStrategies(),
+                    preferences: this.getUserPreferences(),
+                    sessionData: this.getSessionData()
+                };
+            }
+
+            // Save data with versioning
+            saveUserData() {
+                try {
+                    const data = this.getUserData();
+                    
+                    // Save current data
+                    localStorage.setItem(this.storageKey, JSON.stringify(data));
+                    
+                    // Create backup
+                    localStorage.setItem(this.backupKey, JSON.stringify(data));
+                    
+                    // Save version history
+                    this.saveVersion(data);
+                    
+                    console.log('💾 Data saved successfully', data);
+                    this.showSaveNotification();
+                } catch (error) {
+                    console.error('❌ Save failed:', error);
+                    this.showErrorNotification('Failed to save data');
+                }
+            }
+
+            // Load user data
+            loadUserData() {
+                try {
+                    const saved = localStorage.getItem(this.storageKey);
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        this.restoreUserData(data);
+                        console.log('📂 Data loaded successfully', data);
+                        return data;
+                    }
+                } catch (error) {
+                    console.error('❌ Load failed:', error);
+                    this.tryBackupRestore();
+                }
+                return null;
+            }
+
+            // Restore user data to UI
+            restoreUserData(data) {
+                if (data.userInputs?.lastTicker) {
+                    document.getElementById('tickerInput').value = data.userInputs.lastTicker;
+                }
+                
+                if (data.generatedStrategies?.length > 0) {
+                    this.restoreStrategiesDisplay(data.generatedStrategies);
+                }
+                
+                // Restore search history
+                this.restoreSearchHistory(data.userInputs?.searchHistory || []);
+            }
+
+            // Version management
+            saveVersion(data) {
+                try {
+                    let versions = JSON.parse(localStorage.getItem(this.versionsKey) || '[]');
+                    
+                    // Add new version
+                    versions.unshift({
+                        ...data,
+                        versionId: `v_${Date.now()}`,
+                        created: new Date().toISOString()
+                    });
+                    
+                    // Keep only latest versions
+                    if (versions.length > this.maxVersions) {
+                        versions = versions.slice(0, this.maxVersions);
+                    }
+                    
+                    localStorage.setItem(this.versionsKey, JSON.stringify(versions));
+                } catch (error) {
+                    console.error('❌ Version save failed:', error);
+                }
+            }
+
+            // Get available versions
+            getVersions() {
+                try {
+                    return JSON.parse(localStorage.getItem(this.versionsKey) || '[]');
+                } catch (error) {
+                    return [];
+                }
+            }
+
+            // Restore from backup
+            tryBackupRestore() {
+                try {
+                    const backup = localStorage.getItem(this.backupKey);
+                    if (backup) {
+                        const data = JSON.parse(backup);
+                        this.restoreUserData(data);
+                        console.log('🔄 Restored from backup');
+                        this.showRestoreNotification();
+                        return true;
+                    }
+                } catch (error) {
+                    console.error('❌ Backup restore failed:', error);
+                }
+                return false;
+            }
+
+            // Auto-save functionality
+            startAutoSave() {
+                setInterval(() => {
+                    if (this.hasUnsavedChanges()) {
+                        this.saveUserData();
+                    }
+                }, this.autoSaveInterval);
+            }
+
+            // Check for unsaved changes
+            hasUnsavedChanges() {
+                const currentTicker = document.getElementById('tickerInput')?.value || '';
+                const saved = this.loadUserData();
+                return !saved || saved.userInputs?.lastTicker !== currentTicker;
+            }
+
+            // Export data for backup
+            exportData() {
+                const data = this.getUserData();
+                const exportData = {
+                    ...data,
+                    exportDate: new Date().toISOString(),
+                    versions: this.getVersions()
+                };
+                
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ai_options_backup_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.showExportNotification();
+            }
+
+            // Import data from backup
+            importData(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        this.restoreUserData(data);
+                        this.saveUserData(); // Save as current
+                        this.showImportNotification();
+                    } catch (error) {
+                        console.error('❌ Import failed:', error);
+                        this.showErrorNotification('Invalid backup file');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            // Utility functions
+            getSearchHistory() {
+                // Extract from current session or saved data
+                return JSON.parse(localStorage.getItem('search_history') || '[]');
+            }
+
+            getGeneratedStrategies() {
+                // Extract current strategies from results display
+                const results = document.getElementById('results');
+                if (results && results.innerHTML) {
+                    return [{
+                        timestamp: Date.now(),
+                        html: results.innerHTML,
+                        ticker: document.getElementById('tickerInput')?.value
+                    }];
+                }
+                return [];
+            }
+
+            getUserPreferences() {
+                return {
+                    theme: 'dark',
+                    riskTolerance: 'moderate',
+                    autoSave: true
+                };
+            }
+
+            getSessionData() {
+                return {
+                    sessionStart: sessionStorage.getItem('session_start') || Date.now(),
+                    pageViews: parseInt(sessionStorage.getItem('page_views') || '1'),
+                    lastActivity: Date.now()
+                };
+            }
+
+            restoreStrategiesDisplay(strategies) {
+                if (strategies.length > 0 && strategies[0].html) {
+                    const results = document.getElementById('results');
+                    if (results) {
+                        results.innerHTML = strategies[0].html;
+                        results.style.display = 'block';
+                    }
+                }
+            }
+
+            restoreSearchHistory(history) {
+                localStorage.setItem('search_history', JSON.stringify(history));
+            }
+
+            // Warning before page unload
+            setupBeforeUnloadWarning() {
+                window.addEventListener('beforeunload', (e) => {
+                    if (this.hasUnsavedChanges()) {
+                        const message = 'You have unsaved changes. Are you sure you want to leave?';
+                        e.preventDefault();
+                        e.returnValue = message;
+                        return message;
+                    }
+                });
+            }
+
+            // Notification system
+            showSaveNotification() {
+                this.showNotification('💾 Data saved automatically', 'success');
+            }
+
+            showRestoreNotification() {
+                this.showNotification('🔄 Data restored from backup', 'info');
+            }
+
+            showExportNotification() {
+                this.showNotification('📤 Backup exported successfully', 'success');
+            }
+
+            showImportNotification() {
+                this.showNotification('📥 Data imported successfully', 'success');
+            }
+
+            showErrorNotification(message) {
+                this.showNotification(`❌ ${message}`, 'error');
+            }
+
+            showNotification(message, type = 'info') {
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.className = `persistence-notification ${type}`;
+                notification.textContent = message;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: var(--bg-card);
+                    border: 1px solid var(--border-accent);
+                    color: var(--text-primary);
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    box-shadow: var(--shadow-md);
+                    z-index: 10000;
+                    font-size: 14px;
+                    max-width: 300px;
+                    animation: slideIn 0.3s ease;
+                `;
+
+                document.body.appendChild(notification);
+
+                // Auto-remove after 3 seconds
+                setTimeout(() => {
+                    notification.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+
+            // Manual save trigger
+            forceSave() {
+                this.saveUserData();
+            }
+
+            // Clear all data (with confirmation)
+            clearAllData() {
+                if (confirm('⚠️ This will permanently delete all your saved data. Are you sure?')) {
+                    localStorage.removeItem(this.storageKey);
+                    localStorage.removeItem(this.backupKey);
+                    localStorage.removeItem(this.versionsKey);
+                    localStorage.removeItem('search_history');
+                    this.showNotification('🗑️ All data cleared', 'info');
+                }
+            }
+        }
+
+        // Initialize persistence manager
+        const dataManager = new DataPersistenceManager();
+
+        // Add CSS for notifications
+        const notificationStyles = document.createElement('style');
+        notificationStyles.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            .persistence-notification.success { border-left: 4px solid var(--accent-success); }
+            .persistence-notification.error { border-left: 4px solid var(--accent-danger); }
+            .persistence-notification.info { border-left: 4px solid var(--accent-primary); }
+        `;
+        document.head.appendChild(notificationStyles);
+
+        // Enhanced analyzeStock function with auto-save
+        const originalAnalyzeStock = analyzeStock;
+        analyzeStock = async function() {
+            // Save input before analysis
+            dataManager.forceSave();
+            
+            // Run original analysis
+            const result = await originalAnalyzeStock.apply(this, arguments);
+            
+            // Save results after analysis
+            setTimeout(() => {
+                dataManager.forceSave();
+            }, 1000);
+            
+            return result;
+        };
+
         // Auto-focus input on load
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('tickerInput').focus();
+            
+            // Add save shortcut (Ctrl+S)
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    dataManager.forceSave();
+                    dataManager.showNotification('💾 Manual save completed', 'success');
+                }
+            });
+        });
+
+        // === DATA PANEL MANAGEMENT === //
+        function toggleDataPanel() {
+            const panel = document.getElementById('dataPanel');
+            if (panel.style.display === 'none' || !panel.style.display) {
+                panel.style.display = 'block';
+                loadVersionHistory();
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+
+        function loadVersionHistory() {
+            const versions = dataManager.getVersions();
+            const versionList = document.getElementById('versionList');
+            
+            if (versions.length === 0) {
+                versionList.innerHTML = '<div class="version-item">No saved versions yet</div>';
+                return;
+            }
+            
+            versionList.innerHTML = versions.slice(0, 5).map(version => 
+                `<div class="version-item" onclick="restoreVersion('${version.versionId}')" title="Click to restore">
+                    📅 ${new Date(version.created).toLocaleString()}<br>
+                    🎯 ${version.userInputs?.lastTicker || 'No ticker'}
+                </div>`
+            ).join('');
+        }
+
+        function showVersionHistory() {
+            const versions = dataManager.getVersions();
+            if (versions.length === 0) {
+                alert('No version history available yet.');
+                return;
+            }
+            
+            const versionDetails = versions.map((v, i) => 
+                `${i + 1}. ${new Date(v.created).toLocaleString()} - ${v.userInputs?.lastTicker || 'No ticker'}`
+            ).join('\n');
+            
+            alert(`📚 Version History (${versions.length} versions):\n\n${versionDetails}`);
+        }
+
+        function restoreVersion(versionId) {
+            if (confirm('🔄 Restore this version? Current data will be backed up first.')) {
+                // Backup current state first
+                dataManager.forceSave();
+                
+                // Find and restore the version
+                const versions = dataManager.getVersions();
+                const version = versions.find(v => v.versionId === versionId);
+                
+                if (version) {
+                    dataManager.restoreUserData(version);
+                    dataManager.forceSave(); // Save the restored state
+                    dataManager.showNotification('🔄 Version restored successfully', 'success');
+                } else {
+                    dataManager.showNotification('❌ Version not found', 'error');
+                }
+            }
+        }
+
+        // === ENHANCED DATA RECOVERY SYSTEM === //
+        class DataRecoverySystem {
+            static checkForLostData() {
+                // Check if user had previous session data
+                const hasLocalStorage = !!localStorage.getItem(dataManager.storageKey);
+                const hasBackup = !!localStorage.getItem(dataManager.backupKey);
+                const hasVersions = !!localStorage.getItem(dataManager.versionsKey);
+                
+                if (!hasLocalStorage && (hasBackup || hasVersions)) {
+                    // Data loss detected, offer recovery
+                    setTimeout(() => {
+                        if (confirm('🔍 We detected you might have lost some data. Would you like us to try to recover it?')) {
+                            dataManager.tryBackupRestore();
+                        }
+                    }, 2000);
+                }
+            }
+
+            static setupPeriodicBackup() {
+                // Create periodic backup every 10 minutes
+                setInterval(() => {
+                    if (document.getElementById('tickerInput')?.value) {
+                        dataManager.forceSave();
+                    }
+                }, 600000); // 10 minutes
+            }
+
+            static setupVisibilityChangeBackup() {
+                // Save when user switches tabs or minimizes window
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        dataManager.forceSave();
+                    }
+                });
+            }
+        }
+
+        // Initialize recovery system
+        DataRecoverySystem.checkForLostData();
+        DataRecoverySystem.setupPeriodicBackup();
+        DataRecoverySystem.setupVisibilityChangeBackup();
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Shift+B for backup panel
+            if (e.ctrlKey && e.shiftKey && e.key === 'B') {
+                e.preventDefault();
+                toggleDataPanel();
+            }
+            
+            // Ctrl+Shift+E for export
+            if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+                e.preventDefault();
+                dataManager.exportData();
+            }
         });
 
         console.log('🚀 Complete Options Strategy Generator loaded - Professional Trading Platform UI!');
+        console.log('💾 Data Persistence System Active - Your data is now protected!');
+        console.log('⌨️  Keyboard Shortcuts:');
+        console.log('   • Ctrl+S: Manual save');
+        console.log('   • Ctrl+Shift+B: Open backup panel'); 
+        console.log('   • Ctrl+Shift+E: Export backup');
+        console.log('   • 💾 Button (bottom-right): Data management');
     </script>
 </body>
 </html>
