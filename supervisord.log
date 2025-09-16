@@ -102,3 +102,15 @@
 2025-09-16 21:05:47,075 WARN stopped: nextjs-app (terminated by SIGTERM)
 2025-09-16 21:05:59,102 INFO spawned: 'nextjs-app' with pid 25607
 2025-09-16 21:06:00,329 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:17:50,968 INFO waiting for nextjs-app to stop
+2025-09-16 21:17:51,044 WARN stopped: nextjs-app (terminated by SIGTERM)
+2025-09-16 21:17:51,085 INFO spawned: 'nextjs-app' with pid 27142
+2025-09-16 21:17:52,196 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:20:43,907 WARN exited: nextjs-app (terminated by SIGTERM; not expected)
+2025-09-16 21:20:43,909 WARN received SIGTERM indicating exit request
+2025-09-16 21:29:36,473 INFO RPC interface 'supervisor' initialized
+2025-09-16 21:29:36,473 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+2025-09-16 21:29:36,476 INFO daemonizing the supervisord process
+2025-09-16 21:29:36,476 INFO supervisord started with pid 27833
+2025-09-16 21:29:37,481 INFO spawned: 'nextjs-app' with pid 27836
+2025-09-16 21:29:38,643 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)

@@ -699,11 +699,21 @@ export default function UltimateScanner() {
         let totalCost = 0;
         let totalCredit = 0;
         
-        // Calculate total cost and credit separately for clarity
-        tradeForm.legs.forEach(leg => {
-          const premium = parseFloat(leg.premium) || 0;
+        // ✅ FIXED: Robust premium calculation for spreads
+        tradeForm.legs.forEach((leg, index) => {
+          const premiumStr = leg.premium?.toString().trim() || '0';
+          const premium = parseFloat(premiumStr) || 0;
           const qty = parseInt(leg.quantity) || 1;
           const legValue = premium * qty;
+          
+          console.log(`🔍 Leg ${index + 1} (${leg.action}):`, {
+            premiumInput: leg.premium,
+            premiumStr,
+            premium,
+            qty,
+            legValue,
+            action: leg.action
+          });
           
           if (leg.action === 'BUY') {
             totalCost += legValue;
@@ -713,14 +723,33 @@ export default function UltimateScanner() {
         });
         
         const netPremium = totalCredit - totalCost; // Positive = credit, Negative = debit
-        const entryPrice = Math.abs(netPremium); // Always positive for display
+        let entryPrice = Math.abs(netPremium); // Always positive for display
         
-        console.log('🔍 SIMPLIFIED Multi-leg Calculation:', {
+        // ✅ PRIORITY: Use main Premium field if provided (user's intended entry price)
+        if (tradeForm.premium && parseFloat(tradeForm.premium) > 0) {
+          entryPrice = parseFloat(tradeForm.premium);
+          console.log('🎯 Using MAIN premium field (user override):', entryPrice);
+        } else if (entryPrice === 0) {
+          // Fallback to any leg premium if main field is empty
+          console.log('🔄 Main premium field empty, using leg calculation:', entryPrice);
+        }
+        
+        // ✅ FALLBACK 2: If still zero, try to find any premium value in legs
+        if (entryPrice === 0) {
+          const anyPremium = tradeForm.legs.find(leg => leg.premium && parseFloat(leg.premium) > 0);
+          if (anyPremium) {
+            entryPrice = parseFloat(anyPremium.premium);
+            console.log('🔄 Using any available leg premium:', entryPrice);
+          }
+        }
+        
+        console.log('🔍 ENHANCED Multi-leg Calculation:', {
           totalCost,
           totalCredit,
           netPremium,
           entryPrice,
-          isCredit: netPremium > 0
+          isCredit: netPremium > 0,
+          fallbackUsed: entryPrice !== Math.abs(netPremium)
         });
         
         newTrade = {
@@ -2383,6 +2412,9 @@ export default function UltimateScanner() {
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">
                     {tradeForm.assetType === 'OPTION' ? 'Premium' : 'Price'}
+                    {tradeForm.strategyType !== 'SINGLE' && (
+                      <span className="text-xs text-blue-400 ml-1">(Net Entry Price)</span>
+                    )}
                   </label>
                   <input
                     type="number"
