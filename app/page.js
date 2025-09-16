@@ -972,7 +972,7 @@ export default function UltimateScanner() {
     }
   };
 
-  // Generate Advanced Options Strategies - THE COMPLETE ARSENAL (16+ strategies)
+  // Generate Advanced Options Strategies - THE COMPLETE ARSENAL (16 strategies)
   const generateAdvancedStrategies = (analysis) => {
     if (!analysis) return [];
 
@@ -1176,8 +1176,244 @@ export default function UltimateScanner() {
       dte: '21'
     });
 
-    // Randomize and return a selection of strategies
-    return strategies.sort(() => Math.random() - 0.5).slice(0, Math.min(10, strategies.length));
+    // 8. BEAR PUT SPREAD - Bearish limited risk strategy
+    strategies.push({
+      type: 'bear_put_spread',
+      bias: 'BEARISH',
+      grade: 'A',
+      confidence: Math.round((confidence * 100 - 5)),
+      title: `Bear Put Spread ${symbol} ${otm}P/${itm}P`,
+      bullets: [
+        `Buy ${symbol} ${otm} Put for $${(basePrice * 0.025).toFixed(2)} premium`,
+        `Sell ${symbol} ${itm} Put for $${(basePrice * 0.015).toFixed(2)} credit`,
+        `Net Debit: $${(basePrice * 0.01).toFixed(2)} | Maximum profit: $${(basePrice * 0.04).toFixed(2)}`,
+        `Profits from ${symbol} declining below ${itm}`
+      ],
+      entryPrice: (basePrice * 0.01).toFixed(2),
+      target: (basePrice * 0.04).toFixed(2),
+      stopLoss: (basePrice * 0.005).toFixed(2),
+      positionSize: '10 contracts',
+      maxRisk: (basePrice * 0.01 * 100).toFixed(0),
+      maxReward: (basePrice * 0.04 * 100).toFixed(0),
+      rrRatio: '4.0',
+      winProb: '68',
+      timeHorizon: '14-30 days',
+      expiry: midExpiry,
+      dte: '21'
+    });
+
+    // 9. BEAR CALL SPREAD - Bearish credit strategy
+    strategies.push({
+      type: 'bear_call_spread',
+      bias: 'BEARISH',
+      grade: 'A-',
+      confidence: Math.round((confidence * 100 - 3)),
+      title: `Bear Call Spread ${symbol} ${itm}C/${otm}C`,
+      bullets: [
+        `Sell ${symbol} ${itm} Call for $${(basePrice * 0.025).toFixed(2)} credit`,
+        `Buy ${symbol} ${otm} Call for $${(basePrice * 0.015).toFixed(2)} debit`,
+        `Net Credit: $${(basePrice * 0.01).toFixed(2)} | Keep all if ${symbol} < ${itm}`,
+        `Maximum profit if ${symbol} stays below ${itm} at expiration`
+      ],
+      entryPrice: (basePrice * 0.01).toFixed(2),
+      target: (basePrice * 0.005).toFixed(2),
+      stopLoss: (basePrice * 0.025).toFixed(2),
+      positionSize: '10 contracts',
+      maxRisk: (basePrice * 0.04 * 100).toFixed(0),
+      maxReward: (basePrice * 0.01 * 100).toFixed(0),
+      rrRatio: '0.25',
+      winProb: '72',
+      timeHorizon: '21-45 days',
+      expiry: farExpiry,
+      dte: '45'
+    });
+
+    // 10. SHORT STRADDLE - High premium collection neutral strategy
+    strategies.push({
+      type: 'short_straddle',
+      bias: 'NEUTRAL',
+      grade: 'B',
+      confidence: Math.round((confidence * 100 - 12)),
+      title: `Short Straddle ${symbol} ${atm}C+P Credit`,
+      bullets: [
+        `Sell ${symbol} ${atm} Call for $${(basePrice * 0.025).toFixed(2)} credit`,
+        `Sell ${symbol} ${atm} Put for $${(basePrice * 0.025).toFixed(2)} credit`,
+        `Total Credit: $${(basePrice * 0.05).toFixed(2)} | Profit if low volatility`,
+        `Keep premium if ${symbol} stays near ${atm} at expiration`
+      ],
+      entryPrice: (basePrice * 0.05).toFixed(2),
+      target: (basePrice * 0.025).toFixed(2),
+      stopLoss: (basePrice * 0.075).toFixed(2),
+      positionSize: '5 contracts',
+      maxRisk: 'Unlimited',
+      maxReward: (basePrice * 0.05 * 100).toFixed(0),
+      rrRatio: '0.67',
+      winProb: '45',
+      timeHorizon: '7-21 days',
+      expiry: nearExpiry,
+      dte: '7'
+    });
+
+    // 11. SHORT STRANGLE - Wide neutral credit strategy  
+    strategies.push({
+      type: 'short_strangle',
+      bias: 'NEUTRAL',
+      grade: 'B+',
+      confidence: Math.round((confidence * 100 - 8)),
+      title: `Short Strangle ${symbol} ${itm}P/${otm}C Credit`,
+      bullets: [
+        `Sell ${symbol} ${itm} Put for $${(basePrice * 0.02).toFixed(2)} credit`,
+        `Sell ${symbol} ${otm} Call for $${(basePrice * 0.02).toFixed(2)} credit`,
+        `Total Credit: $${(basePrice * 0.04).toFixed(2)} | Wider profit zone than straddle`,
+        `Profitable if ${itm} < ${symbol} < ${otm} at expiration`
+      ],
+      entryPrice: (basePrice * 0.04).toFixed(2),
+      target: (basePrice * 0.02).toFixed(2),
+      stopLoss: (basePrice * 0.06).toFixed(2),
+      positionSize: '8 contracts',
+      maxRisk: 'Unlimited',
+      maxReward: (basePrice * 0.04 * 100).toFixed(0),
+      rrRatio: '0.67',
+      winProb: '65',
+      timeHorizon: '14-30 days',
+      expiry: midExpiry,
+      dte: '21'
+    });
+
+    // 12. DIAGONAL SPREAD - Advanced time and volatility strategy
+    strategies.push({
+      type: 'diagonal_spread',
+      bias: 'NEUTRAL-BULLISH',
+      grade: 'A',
+      confidence: Math.round((confidence * 100 - 7)),
+      title: `Diagonal Spread ${symbol} ${itm}C Near/${otm}C Far`,
+      bullets: [
+        `Sell ${symbol} ${itm} Call expiring ${nearExpiry}`,
+        `Buy ${symbol} ${otm} Call expiring ${farExpiry}`,
+        `Benefits from time decay and controlled directional move`,
+        `Roll the short call as it expires for additional income`
+      ],
+      entryPrice: (basePrice * 0.012).toFixed(2),
+      target: (basePrice * 0.035).toFixed(2),
+      stopLoss: (basePrice * 0.006).toFixed(2),
+      positionSize: '10 contracts',
+      maxRisk: (basePrice * 0.012 * 100).toFixed(0),
+      maxReward: (basePrice * 0.035 * 100).toFixed(0),
+      rrRatio: '2.9',
+      winProb: '62',
+      timeHorizon: '30-60 days',
+      expiry: `${nearExpiry}/${farExpiry}`,
+      dte: '7/45'
+    });
+
+    // 13. RATIO CALL SPREAD - Advanced bullish strategy
+    strategies.push({
+      type: 'ratio_call_spread',
+      bias: 'BULLISH',
+      grade: 'B+',
+      confidence: Math.round((confidence * 100 - 10)),
+      title: `Ratio Call Spread ${symbol} 1x${itm}C / 2x${otm}C`,
+      bullets: [
+        `Buy 1 ${symbol} ${itm} Call for $${(basePrice * 0.03).toFixed(2)}`,
+        `Sell 2 ${symbol} ${otm} Calls for $${(basePrice * 0.04).toFixed(2)} total`,
+        `Net Credit: $${(basePrice * 0.01).toFixed(2)} | Max profit at ${otm}`,
+        `Risk increases if ${symbol} moves significantly above ${otm}`
+      ],
+      entryPrice: (basePrice * 0.01).toFixed(2),
+      target: (basePrice * 0.025).toFixed(2),
+      stopLoss: (basePrice * 0.04).toFixed(2),
+      positionSize: '5 spreads (1x1, 2x1)',
+      maxRisk: 'Unlimited above upside breakeven',
+      maxReward: (basePrice * 0.025 * 100).toFixed(0),
+      rrRatio: '2.5',
+      winProb: '58',
+      timeHorizon: '21-45 days',
+      expiry: farExpiry,
+      dte: '45'
+    });
+
+    // 14. BULL CALL SPREAD - Classic bullish limited risk
+    strategies.push({
+      type: 'bull_call_spread',
+      bias: 'BULLISH',
+      grade: 'A',
+      confidence: Math.round((confidence * 100 - 4)),
+      title: `Bull Call Spread ${symbol} ${itm}C/${otm}C`,
+      bullets: [
+        `Buy ${symbol} ${itm} Call for $${(basePrice * 0.025).toFixed(2)} premium`,
+        `Sell ${symbol} ${otm} Call for $${(basePrice * 0.015).toFixed(2)} credit`,
+        `Net Debit: $${(basePrice * 0.01).toFixed(2)} | Max profit: $${(basePrice * 0.04).toFixed(2)}`,
+        `Profits from moderate bullish move above ${itm}`
+      ],
+      entryPrice: (basePrice * 0.01).toFixed(2),
+      target: (basePrice * 0.04).toFixed(2),
+      stopLoss: (basePrice * 0.005).toFixed(2),
+      positionSize: '10 contracts',
+      maxRisk: (basePrice * 0.01 * 100).toFixed(0),
+      maxReward: (basePrice * 0.04 * 100).toFixed(0),
+      rrRatio: '4.0',
+      winProb: '65',
+      timeHorizon: '14-30 days',
+      expiry: midExpiry,
+      dte: '21'
+    });
+
+    // 15. BULL PUT SPREAD - Bullish credit strategy
+    strategies.push({
+      type: 'bull_put_spread',
+      bias: 'BULLISH',
+      grade: 'A+',
+      confidence: Math.round((confidence * 100 + 2)),
+      title: `Bull Put Spread ${symbol} ${itm}P/${farItm}P Credit`,
+      bullets: [
+        `Sell ${symbol} ${itm} Put for $${(basePrice * 0.025).toFixed(2)} credit`,
+        `Buy ${symbol} ${farItm} Put for $${(basePrice * 0.015).toFixed(2)} debit`,
+        `Net Credit: $${(basePrice * 0.01).toFixed(2)} | Keep all if ${symbol} > ${itm}`,
+        `High probability income play with defined risk`
+      ],
+      entryPrice: (basePrice * 0.01).toFixed(2),
+      target: (basePrice * 0.005).toFixed(2),
+      stopLoss: (basePrice * 0.025).toFixed(2),
+      positionSize: '10 contracts',
+      maxRisk: (basePrice * 0.04 * 100).toFixed(0),
+      maxReward: (basePrice * 0.01 * 100).toFixed(0),
+      rrRatio: '0.4',
+      winProb: '75',
+      timeHorizon: '21-45 days',
+      expiry: farExpiry,
+      dte: '45'
+    });
+
+    // 16. CASH SECURED PUT - Conservative income strategy
+    strategies.push({
+      type: 'cash_secured_put',
+      bias: 'NEUTRAL-BULLISH', 
+      grade: 'B+',
+      confidence: Math.round((confidence * 100 - 8)),
+      title: `Cash Secured Put ${symbol} ${itm}P Income`,
+      bullets: [
+        `Sell ${symbol} ${itm} Put for $${(basePrice * 0.02).toFixed(2)} premium`,
+        `Hold $${(itm * 100).toLocaleString()} cash as collateral`,
+        `Keep premium if ${symbol} stays above ${itm}`,
+        `Assigned stock at effective price ${(itm - basePrice * 0.02).toFixed(2)} if below ${itm}`
+      ],
+      entryPrice: (basePrice * 0.02).toFixed(2),
+      target: (basePrice * 0.01).toFixed(2),
+      stopLoss: 'Assignment acceptable',
+      positionSize: '5 contracts',
+      maxRisk: ((itm - basePrice * 0.02) * 100).toFixed(0),
+      maxReward: (basePrice * 0.02 * 100).toFixed(0),
+      rrRatio: ((basePrice * 0.02) / (itm - basePrice * 0.02)).toFixed(2),
+      winProb: '72',
+      timeHorizon: '21-45 days',
+      expiry: farExpiry,
+      dte: '45'
+    });
+
+    // Randomize and return a selection of strategies (showing 12-15 out of 16 total)
+    const shuffledStrategies = strategies.sort(() => Math.random() - 0.5);
+    const numToReturn = Math.floor(Math.random() * 4) + 12; // Return 12-15 strategies randomly
+    return shuffledStrategies.slice(0, Math.min(numToReturn, strategies.length));
   };
 
   return (
@@ -1233,7 +1469,7 @@ export default function UltimateScanner() {
                   </h2>
                   <div className="flex items-center gap-2 text-slate-400">
                     <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                    <span className="font-medium text-green-400">15+ Strategies Ready - Enter Any Ticker</span>
+                    <span className="font-medium text-green-400">16 Advanced Strategies Ready - Enter Any Ticker</span>
                   </div>
                 </div>
               </div>
