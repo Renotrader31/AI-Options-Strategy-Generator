@@ -80,12 +80,12 @@ export default function UltimateScanner() {
       ]
     },
     PUT_SPREAD: {
-      name: 'Put Spread',
+      name: 'Bull Put Spread',
       legs: 2,
-      description: 'Buy put at higher strike, sell put at lower strike',
+      description: 'Sell put at higher strike, buy put at lower strike (bullish)',
       template: [
-        { action: 'BUY', optionType: 'PUT', strikeOffset: 5 },
-        { action: 'SELL', optionType: 'PUT', strikeOffset: 0 }
+        { action: 'SELL', optionType: 'PUT', strikeOffset: 5 },
+        { action: 'BUY', optionType: 'PUT', strikeOffset: 0 }
       ]
     },
     STRADDLE: {
@@ -117,6 +117,24 @@ export default function UltimateScanner() {
         { action: 'BUY', optionType: 'CALL', strikeOffset: 15 }
       ]
     },
+    BEAR_PUT_SPREAD: {
+      name: 'Bear Put Spread',
+      legs: 2,
+      description: 'Buy put at higher strike, sell put at lower strike (bearish)',
+      template: [
+        { action: 'BUY', optionType: 'PUT', strikeOffset: 5 },
+        { action: 'SELL', optionType: 'PUT', strikeOffset: 0 }
+      ]
+    },
+    BEAR_CALL_SPREAD: {
+      name: 'Bear Call Spread',
+      legs: 2,
+      description: 'Sell call at lower strike, buy call at higher strike (bearish)',
+      template: [
+        { action: 'SELL', optionType: 'CALL', strikeOffset: 0 },
+        { action: 'BUY', optionType: 'CALL', strikeOffset: 5 }
+      ]
+    },
     BUTTERFLY: {
       name: 'Butterfly Spread',
       legs: 3,
@@ -125,6 +143,16 @@ export default function UltimateScanner() {
         { action: 'BUY', optionType: 'CALL', strikeOffset: -5 },
         { action: 'SELL', optionType: 'CALL', strikeOffset: 0, quantity: 2 },
         { action: 'BUY', optionType: 'CALL', strikeOffset: 5 }
+      ]
+    },
+    JADE_LIZARD: {
+      name: 'Jade Lizard',
+      legs: 3,
+      description: 'Sell put + sell call spread (no upside risk)',
+      template: [
+        { action: 'SELL', optionType: 'PUT', strikeOffset: -5 },
+        { action: 'SELL', optionType: 'CALL', strikeOffset: 5 },
+        { action: 'BUY', optionType: 'CALL', strikeOffset: 10 }
       ]
     }
   };
@@ -387,6 +415,182 @@ export default function UltimateScanner() {
     });
   };
 
+  // Validate spread strategy
+  const validateSpreadStrategy = () => {
+    const errors = [];
+    
+    if (tradeForm.strategyType === 'SINGLE') return errors;
+
+    // Validate all legs have required fields
+    for (let i = 0; i < tradeForm.legs.length; i++) {
+      const leg = tradeForm.legs[i];
+      if (!leg.strikePrice || parseFloat(leg.strikePrice) <= 0) {
+        errors.push(`Leg ${i + 1}: Strike price is required and must be greater than 0`);
+      }
+      if (!leg.premium || parseFloat(leg.premium) <= 0) {
+        errors.push(`Leg ${i + 1}: Premium is required and must be greater than 0`);
+      }
+      if (!leg.expirationDate) {
+        errors.push(`Leg ${i + 1}: Expiration date is required`);
+      }
+      if (!leg.quantity || parseInt(leg.quantity) <= 0) {
+        errors.push(`Leg ${i + 1}: Quantity must be greater than 0`);
+      }
+    }
+
+    // Strategy-specific validation
+    if (tradeForm.strategyType === 'CALL_SPREAD') {
+      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY');
+      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL');
+      
+      if (!buyLeg || !sellLeg) {
+        errors.push('Call spread requires one BUY leg and one SELL leg');
+      } else {
+        if (buyLeg.optionType !== 'CALL' || sellLeg.optionType !== 'CALL') {
+          errors.push('Call spread must use CALL options only');
+        }
+        const buyStrike = parseFloat(buyLeg.strikePrice);
+        const sellStrike = parseFloat(sellLeg.strikePrice);
+        if (buyStrike >= sellStrike) {
+          errors.push('Call spread: BUY strike must be lower than SELL strike for bull call spread');
+        }
+      }
+    }
+    
+    if (tradeForm.strategyType === 'PUT_SPREAD') {
+      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY');
+      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL');
+      
+      if (!buyLeg || !sellLeg) {
+        errors.push('Bull put spread requires one BUY leg and one SELL leg');
+      } else {
+        if (buyLeg.optionType !== 'PUT' || sellLeg.optionType !== 'PUT') {
+          errors.push('Bull put spread must use PUT options only');
+        }
+        const buyStrike = parseFloat(buyLeg.strikePrice);
+        const sellStrike = parseFloat(sellLeg.strikePrice);
+        if (sellStrike <= buyStrike) {
+          errors.push('Bull put spread: SELL strike must be higher than BUY strike');
+        }
+      }
+    }
+
+    if (tradeForm.strategyType === 'BEAR_PUT_SPREAD') {
+      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY');
+      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL');
+      
+      if (!buyLeg || !sellLeg) {
+        errors.push('Bear put spread requires one BUY leg and one SELL leg');
+      } else {
+        if (buyLeg.optionType !== 'PUT' || sellLeg.optionType !== 'PUT') {
+          errors.push('Bear put spread must use PUT options only');
+        }
+        const buyStrike = parseFloat(buyLeg.strikePrice);
+        const sellStrike = parseFloat(sellLeg.strikePrice);
+        if (buyStrike <= sellStrike) {
+          errors.push('Bear put spread: BUY strike must be higher than SELL strike');
+        }
+      }
+    }
+
+    if (tradeForm.strategyType === 'BEAR_CALL_SPREAD') {
+      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY');
+      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL');
+      
+      if (!buyLeg || !sellLeg) {
+        errors.push('Bear call spread requires one BUY leg and one SELL leg');
+      } else {
+        if (buyLeg.optionType !== 'CALL' || sellLeg.optionType !== 'CALL') {
+          errors.push('Bear call spread must use CALL options only');
+        }
+        const buyStrike = parseFloat(buyLeg.strikePrice);
+        const sellStrike = parseFloat(sellLeg.strikePrice);
+        if (sellStrike >= buyStrike) {
+          errors.push('Bear call spread: SELL strike must be lower than BUY strike');
+        }
+      }
+    }
+
+    if (tradeForm.strategyType === 'JADE_LIZARD') {
+      if (tradeForm.legs.length !== 3) {
+        errors.push('Jade Lizard requires exactly 3 legs');
+      } else {
+        const putLeg = tradeForm.legs.find(leg => leg.optionType === 'PUT');
+        const callLegs = tradeForm.legs.filter(leg => leg.optionType === 'CALL');
+        
+        if (!putLeg || callLegs.length !== 2) {
+          errors.push('Jade Lizard requires 1 PUT leg and 2 CALL legs');
+        }
+
+        const sellCallLeg = callLegs.find(leg => leg.action === 'SELL');
+        const buyCallLeg = callLegs.find(leg => leg.action === 'BUY');
+
+        if (!sellCallLeg || !buyCallLeg || putLeg.action !== 'SELL') {
+          errors.push('Jade Lizard requires: SELL PUT, SELL CALL, BUY CALL');
+        }
+      }
+    }
+
+    if (tradeForm.strategyType === 'STRADDLE') {
+      const callLeg = tradeForm.legs.find(leg => leg.optionType === 'CALL');
+      const putLeg = tradeForm.legs.find(leg => leg.optionType === 'PUT');
+      
+      if (!callLeg || !putLeg) {
+        errors.push('Straddle requires one CALL and one PUT option');
+      } else {
+        if (callLeg.strikePrice !== putLeg.strikePrice) {
+          errors.push('Straddle: Both legs must have the same strike price');
+        }
+        if (callLeg.action !== putLeg.action) {
+          errors.push('Straddle: Both legs must have the same action (BUY or SELL)');
+        }
+      }
+    }
+
+    if (tradeForm.strategyType === 'STRANGLE') {
+      const callLeg = tradeForm.legs.find(leg => leg.optionType === 'CALL');
+      const putLeg = tradeForm.legs.find(leg => leg.optionType === 'PUT');
+      
+      if (!callLeg || !putLeg) {
+        errors.push('Strangle requires one CALL and one PUT option');
+      } else {
+        if (callLeg.action !== putLeg.action) {
+          errors.push('Strangle: Both legs must have the same action (BUY or SELL)');
+        }
+        const callStrike = parseFloat(callLeg.strikePrice);
+        const putStrike = parseFloat(putLeg.strikePrice);
+        if (callStrike <= putStrike) {
+          errors.push('Strangle: CALL strike must be higher than PUT strike');
+        }
+      }
+    }
+
+    if (tradeForm.strategyType === 'IRON_CONDOR') {
+      if (tradeForm.legs.length !== 4) {
+        errors.push('Iron Condor requires exactly 4 legs');
+      } else {
+        const putLegs = tradeForm.legs.filter(leg => leg.optionType === 'PUT');
+        const callLegs = tradeForm.legs.filter(leg => leg.optionType === 'CALL');
+        
+        if (putLegs.length !== 2 || callLegs.length !== 2) {
+          errors.push('Iron Condor requires 2 PUT legs and 2 CALL legs');
+        }
+
+        // Additional Iron Condor validation
+        const sellPutLeg = putLegs.find(leg => leg.action === 'SELL');
+        const buyPutLeg = putLegs.find(leg => leg.action === 'BUY');
+        const sellCallLeg = callLegs.find(leg => leg.action === 'SELL');
+        const buyCallLeg = callLegs.find(leg => leg.action === 'BUY');
+
+        if (!sellPutLeg || !buyPutLeg || !sellCallLeg || !buyCallLeg) {
+          errors.push('Iron Condor requires: SELL PUT, BUY PUT, SELL CALL, BUY CALL');
+        }
+      }
+    }
+
+    return errors;
+  };
+
   // Handle trade submission
   const handleTradeSubmit = async (isQuickSave = false) => {
     if (!tradeForm.symbol) {
@@ -410,6 +614,15 @@ export default function UltimateScanner() {
       }
       if (!tradeForm.expirationDate) {
         setError('Please enter expiration date for options');
+        return;
+      }
+    }
+
+    // Validate spread strategies
+    if (tradeForm.strategyType !== 'SINGLE') {
+      const spreadErrors = validateSpreadStrategy();
+      if (spreadErrors.length > 0) {
+        setError(`Strategy Validation Failed:\n• ${spreadErrors.join('\n• ')}`);
         return;
       }
     }
