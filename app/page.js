@@ -670,24 +670,38 @@ export default function UltimateScanner() {
       let newTrade;
       
       if (tradeForm.strategyType !== 'SINGLE' && tradeForm.legs.length > 1) {
-        // Multi-leg strategy
-        const netPremium = tradeForm.legs.reduce((sum, leg) => {
-          const premium = parseFloat(leg.premium) || 0;
-          const qty = parseFloat(leg.quantity) || 1;
-          return sum + (leg.action === 'BUY' ? -premium * qty : premium * qty);
-        }, 0);
+        // SIMPLIFIED Multi-leg strategy calculation
+        let totalCost = 0;
+        let totalCredit = 0;
         
-        console.log('🔍 Net Premium Calculation:', {
-          legs: tradeForm.legs,
+        // Calculate total cost and credit separately for clarity
+        tradeForm.legs.forEach(leg => {
+          const premium = parseFloat(leg.premium) || 0;
+          const qty = parseInt(leg.quantity) || 1;
+          const legValue = premium * qty;
+          
+          if (leg.action === 'BUY') {
+            totalCost += legValue;
+          } else {
+            totalCredit += legValue;
+          }
+        });
+        
+        const netPremium = totalCredit - totalCost; // Positive = credit, Negative = debit
+        const entryPrice = Math.abs(netPremium); // Always positive for display
+        
+        console.log('🔍 SIMPLIFIED Multi-leg Calculation:', {
+          totalCost,
+          totalCredit,
           netPremium,
-          absoluteNetPremium: Math.abs(netPremium),
-          entryPriceCalculated: Math.round(Math.abs(netPremium) * 100) / 100
+          entryPrice,
+          isCredit: netPremium > 0
         });
         
         newTrade = {
           id: Date.now().toString(),
           symbol: tradeForm.symbol,
-          type: 'MULTI_LEG', // Add type field for multi-leg strategies
+          type: 'MULTI_LEG',
           assetType: 'MULTI_LEG_OPTION',
           strategyType: tradeForm.strategyType,
           strategyName: strategyTemplates[tradeForm.strategyType]?.name || 'Custom Strategy',
@@ -699,11 +713,14 @@ export default function UltimateScanner() {
             expirationDate: leg.expirationDate,
             quantity: parseInt(leg.quantity),
             entryPremium: parseFloat(leg.premium),
-            currentPremium: parseFloat(leg.premium) // Start with entry premium
+            currentPremium: parseFloat(leg.premium)
           })),
           netPremium: Math.round(netPremium * 100) / 100,
-          quantity: 1, // Multi-leg strategies are typically 1 "set"
-          entryPrice: Math.round(Math.abs(netPremium) * 100) / 100, // Net premium per contract set
+          isCredit: netPremium > 0,
+          totalCost: Math.round(totalCost * 100) / 100,
+          totalCredit: Math.round(totalCredit * 100) / 100,
+          quantity: 1,
+          entryPrice: Math.round(entryPrice * 100) / 100, // SIMPLIFIED: just the net premium amount
           stopLoss: tradeForm.stopLoss ? parseFloat(tradeForm.stopLoss) : null,
           takeProfit: tradeForm.takeProfit ? parseFloat(tradeForm.takeProfit) : null,
           notes: tradeForm.notes || `${strategyTemplates[tradeForm.strategyType]?.name} Strategy`,
