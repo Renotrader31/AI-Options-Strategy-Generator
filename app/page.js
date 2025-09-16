@@ -606,8 +606,8 @@ export default function UltimateScanner() {
       return;
     }
 
-    // Validate options-specific fields
-    if (tradeForm.assetType === 'OPTION') {
+    // Validate options-specific fields (only for single options, not spreads)
+    if (tradeForm.assetType === 'OPTION' && tradeForm.strategyType === 'SINGLE') {
       if (!tradeForm.strikePrice) {
         setError('Please enter strike price for options');
         return;
@@ -643,8 +643,8 @@ export default function UltimateScanner() {
         status: 'active'
       };
 
-      // Add options-specific fields
-      if (tradeForm.assetType === 'OPTION') {
+      // Add options-specific fields (only for single options)
+      if (tradeForm.assetType === 'OPTION' && tradeForm.strategyType === 'SINGLE') {
         tradeData.optionType = tradeForm.optionType;
         tradeData.strikePrice = parseFloat(tradeForm.strikePrice);
         tradeData.expirationDate = tradeForm.expirationDate;
