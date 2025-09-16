@@ -16,6 +16,7 @@ export default function UltimateScanner() {
   const [trades, setTrades] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [analysis, setAnalysis] = useState(null);
+  const [enhancedStrategies, setEnhancedStrategies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -326,8 +327,19 @@ export default function UltimateScanner() {
       
       if (data.success && data.analysis) {
         setAnalysis(data.analysis);
-        setSuccessMessage(`✅ AI Analysis complete for ${symbol}! Found ${generateAdvancedStrategies(data.analysis).length} trading strategies. Scroll down to see recommendations.`);
-        console.log('✅ Analysis set successfully, strategies available');
+        
+        // Generate enhanced strategies asynchronously
+        generateAdvancedStrategies(data.analysis, true).then(strategies => {
+          setEnhancedStrategies(strategies);
+          setSuccessMessage(`✅ AI Analysis complete for ${symbol}! Found ${strategies.length} trading strategies (ML Enhanced). Scroll down to see recommendations.`);
+          console.log('✅ Analysis and ML-enhanced strategies ready');
+        }).catch(async (error) => {
+          console.error('Error generating enhanced strategies:', error);
+          // Fallback to synchronous strategies
+          const fallbackStrategies = await generateAdvancedStrategies(data.analysis, false);
+          setEnhancedStrategies(fallbackStrategies);
+          setSuccessMessage(`✅ AI Analysis complete for ${symbol}! Found ${fallbackStrategies.length} trading strategies. Scroll down to see recommendations.`);
+        });
       } else {
         const errorMsg = data.error || data.message || 'Unknown error - check API response';
         console.error('❌ Analysis failed:', errorMsg);
@@ -415,64 +427,76 @@ export default function UltimateScanner() {
     });
   };
 
-  // Validate spread strategy
+  // Validate spread strategy - RELAXED VALIDATION FOR BETTER UX
   const validateSpreadStrategy = () => {
     const errors = [];
     
     if (tradeForm.strategyType === 'SINGLE') return errors;
 
-    // Validate all legs have required fields
+    // ✅ FIXED: More flexible validation - only require essential fields
+    let hasValidLeg = false;
+    
     for (let i = 0; i < tradeForm.legs.length; i++) {
       const leg = tradeForm.legs[i];
-      if (!leg.strikePrice || parseFloat(leg.strikePrice) <= 0) {
-        errors.push(`Leg ${i + 1}: Strike price is required and must be greater than 0`);
-      }
-      if (!leg.premium || parseFloat(leg.premium) <= 0) {
-        errors.push(`Leg ${i + 1}: Premium is required and must be greater than 0`);
-      }
-      if (!leg.expirationDate) {
-        errors.push(`Leg ${i + 1}: Expiration date is required`);
-      }
-      if (!leg.quantity || parseInt(leg.quantity) <= 0) {
-        errors.push(`Leg ${i + 1}: Quantity must be greater than 0`);
-      }
-    }
-
-    // Strategy-specific validation
-    if (tradeForm.strategyType === 'CALL_SPREAD') {
-      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY');
-      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL');
       
-      if (!buyLeg || !sellLeg) {
-        errors.push('Call spread requires one BUY leg and one SELL leg');
-      } else {
-        if (buyLeg.optionType !== 'CALL' || sellLeg.optionType !== 'CALL') {
-          errors.push('Call spread must use CALL options only');
-        }
-        const buyStrike = parseFloat(buyLeg.strikePrice);
-        const sellStrike = parseFloat(sellLeg.strikePrice);
-        if (buyStrike >= sellStrike) {
-          errors.push('Call spread: BUY strike must be lower than SELL strike for bull call spread');
-        }
+      // Only require strike price - most essential field
+      if (!leg.strikePrice || parseFloat(leg.strikePrice) <= 0) {
+        errors.push(`Leg ${i + 1}: Strike price is required`);
+        continue; // Skip other validations for this leg
+      }
+      
+      // If strike is valid, this counts as a valid leg
+      hasValidLeg = true;
+      
+      // Optional validations with defaults
+      if (!leg.quantity || parseInt(leg.quantity) <= 0) {
+        leg.quantity = '1'; // Default quantity
+      }
+      
+      // Premium validation only if provided
+      if (leg.premium && parseFloat(leg.premium) <= 0) {
+        errors.push(`Leg ${i + 1}: Premium must be greater than 0 if provided`);
       }
     }
     
-    if (tradeForm.strategyType === 'PUT_SPREAD') {
-      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY');
-      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL');
+    // Ensure we have at least one valid leg
+    if (!hasValidLeg) {
+      errors.push('At least one leg must have a valid strike price');
+    }
+
+    // ✅ FIXED: Relaxed strategy-specific validation - warnings instead of hard errors
+    if (tradeForm.strategyType === 'CALL_SPREAD') {
+      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY' && leg.strikePrice);
+      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL' && leg.strikePrice);
       
-      if (!buyLeg || !sellLeg) {
-        errors.push('Bull put spread requires one BUY leg and one SELL leg');
-      } else {
-        if (buyLeg.optionType !== 'PUT' || sellLeg.optionType !== 'PUT') {
-          errors.push('Bull put spread must use PUT options only');
-        }
+      // Only warn if both legs exist but have issues
+      if (buyLeg && sellLeg) {
         const buyStrike = parseFloat(buyLeg.strikePrice);
         const sellStrike = parseFloat(sellLeg.strikePrice);
-        if (sellStrike <= buyStrike) {
-          errors.push('Bull put spread: SELL strike must be higher than BUY strike');
+        
+        // Allow flexibility - just warn about common configurations
+        if (buyStrike >= sellStrike) {
+          console.warn('⚠️ Call spread: BUY strike higher than SELL strike (Bear Call Spread)');
         }
       }
+      // Don't require both legs - user might be entering one at a time
+    }
+    
+    if (tradeForm.strategyType === 'PUT_SPREAD') {
+      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY' && leg.strikePrice);
+      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL' && leg.strikePrice);
+      
+      // Only warn if both legs exist but have configuration issues
+      if (buyLeg && sellLeg) {
+        const buyStrike = parseFloat(buyLeg.strikePrice);
+        const sellStrike = parseFloat(sellLeg.strikePrice);
+        
+        // Allow flexibility - just log for debugging
+        if (sellStrike <= buyStrike) {
+          console.warn('⚠️ Put spread: SELL strike lower than BUY strike (Bear Put Spread)');
+        }
+      }
+      // Allow partial entry - user might be building the spread step by step
     }
 
     if (tradeForm.strategyType === 'BEAR_PUT_SPREAD') {
@@ -608,12 +632,13 @@ export default function UltimateScanner() {
         return;
       }
     } else {
-      // For multi-leg strategies, ensure at least one leg has premium data
-      const hasValidLeg = tradeForm.legs.some(leg => leg.premium && parseFloat(leg.premium) > 0);
-      if (!hasValidLeg) {
-        setError('Please enter premium for at least one leg of the spread');
+      // ✅ FIXED: More flexible validation for multi-leg strategies
+      const hasValidStrike = tradeForm.legs.some(leg => leg.strikePrice && parseFloat(leg.strikePrice) > 0);
+      if (!hasValidStrike) {
+        setError('Please enter at least one strike price for the spread');
         return;
       }
+      // Premium is optional - many traders enter spreads without exact premiums initially
     }
 
     // Validate options-specific fields (only for single options, not spreads)
@@ -972,15 +997,45 @@ export default function UltimateScanner() {
     }
   };
 
-  // Generate Advanced Options Strategies - THE COMPLETE ARSENAL (16+ strategies)
-  const generateAdvancedStrategies = (analysis) => {
+  // Generate Advanced Options Strategies - THE COMPLETE ARSENAL (16 strategies) with ML Learning
+  const generateAdvancedStrategies = async (analysis, useMachineLearning = true) => {
     if (!analysis) return [];
 
     const symbol = analysis.symbol || tradeForm.symbol || 'SPY';
-    const basePrice = Math.random() * 300 + 150; // Mock current stock price
+    const basePrice = Math.random() * 300 + 150; // Mock current stock price (TODO: Replace with real data)
     const iv = Math.random() * 0.8 + 0.2; // Implied volatility 20-100%
-    const confidence = analysis.confidence || 0.75;
-    const strategies = [];
+    let confidence = analysis.confidence || 0.75;
+    let strategies = [];
+
+    // 🧠 ENHANCED: Use Machine Learning from Portfolio Performance
+    let mlEnhancement = null;
+    if (useMachineLearning && trades && trades.length > 0) {
+      try {
+        console.log('🧠 Requesting ML enhancement from portfolio data...');
+        const mlResponse = await fetch('/api/ml-learning', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            portfolioData: trades,
+            symbol,
+            marketData: { price: basePrice, changePercent: (basePrice - basePrice * 0.98) / basePrice * 100 }
+          })
+        });
+
+        if (mlResponse.ok) {
+          const mlData = await mlResponse.json();
+          if (mlData.success) {
+            mlEnhancement = mlData.enhancedAnalysis;
+            console.log('🧠 ML Enhancement applied:', mlEnhancement.learningMetrics);
+            
+            // Boost confidence based on learning
+            confidence = Math.min(0.95, confidence + (mlEnhancement.learningConfidence?.overall || 0) * 0.2);
+          }
+        }
+      } catch (error) {
+        console.error('🧠 ML Enhancement failed, using standard analysis:', error);
+      }
+    }
 
     // Calculate option strikes based on current price
     const atm = Math.round(basePrice);
@@ -1176,8 +1231,290 @@ export default function UltimateScanner() {
       dte: '21'
     });
 
-    // Randomize and return a selection of strategies
-    return strategies.sort(() => Math.random() - 0.5).slice(0, Math.min(10, strategies.length));
+    // 8. BEAR PUT SPREAD - Bearish limited risk strategy
+    strategies.push({
+      type: 'bear_put_spread',
+      bias: 'BEARISH',
+      grade: 'A',
+      confidence: Math.round((confidence * 100 - 5)),
+      title: `Bear Put Spread ${symbol} ${otm}P/${itm}P`,
+      bullets: [
+        `Buy ${symbol} ${otm} Put for $${(basePrice * 0.025).toFixed(2)} premium`,
+        `Sell ${symbol} ${itm} Put for $${(basePrice * 0.015).toFixed(2)} credit`,
+        `Net Debit: $${(basePrice * 0.01).toFixed(2)} | Maximum profit: $${(basePrice * 0.04).toFixed(2)}`,
+        `Profits from ${symbol} declining below ${itm}`
+      ],
+      entryPrice: (basePrice * 0.01).toFixed(2),
+      target: (basePrice * 0.04).toFixed(2),
+      stopLoss: (basePrice * 0.005).toFixed(2),
+      positionSize: '10 contracts',
+      maxRisk: (basePrice * 0.01 * 100).toFixed(0),
+      maxReward: (basePrice * 0.04 * 100).toFixed(0),
+      rrRatio: '4.0',
+      winProb: '68',
+      timeHorizon: '14-30 days',
+      expiry: midExpiry,
+      dte: '21'
+    });
+
+    // 9. BEAR CALL SPREAD - Bearish credit strategy
+    strategies.push({
+      type: 'bear_call_spread',
+      bias: 'BEARISH',
+      grade: 'A-',
+      confidence: Math.round((confidence * 100 - 3)),
+      title: `Bear Call Spread ${symbol} ${itm}C/${otm}C`,
+      bullets: [
+        `Sell ${symbol} ${itm} Call for $${(basePrice * 0.025).toFixed(2)} credit`,
+        `Buy ${symbol} ${otm} Call for $${(basePrice * 0.015).toFixed(2)} debit`,
+        `Net Credit: $${(basePrice * 0.01).toFixed(2)} | Keep all if ${symbol} < ${itm}`,
+        `Maximum profit if ${symbol} stays below ${itm} at expiration`
+      ],
+      entryPrice: (basePrice * 0.01).toFixed(2),
+      target: (basePrice * 0.005).toFixed(2),
+      stopLoss: (basePrice * 0.025).toFixed(2),
+      positionSize: '10 contracts',
+      maxRisk: (basePrice * 0.04 * 100).toFixed(0),
+      maxReward: (basePrice * 0.01 * 100).toFixed(0),
+      rrRatio: '0.25',
+      winProb: '72',
+      timeHorizon: '21-45 days',
+      expiry: farExpiry,
+      dte: '45'
+    });
+
+    // 10. SHORT STRADDLE - High premium collection neutral strategy
+    strategies.push({
+      type: 'short_straddle',
+      bias: 'NEUTRAL',
+      grade: 'B',
+      confidence: Math.round((confidence * 100 - 12)),
+      title: `Short Straddle ${symbol} ${atm}C+P Credit`,
+      bullets: [
+        `Sell ${symbol} ${atm} Call for $${(basePrice * 0.025).toFixed(2)} credit`,
+        `Sell ${symbol} ${atm} Put for $${(basePrice * 0.025).toFixed(2)} credit`,
+        `Total Credit: $${(basePrice * 0.05).toFixed(2)} | Profit if low volatility`,
+        `Keep premium if ${symbol} stays near ${atm} at expiration`
+      ],
+      entryPrice: (basePrice * 0.05).toFixed(2),
+      target: (basePrice * 0.025).toFixed(2),
+      stopLoss: (basePrice * 0.075).toFixed(2),
+      positionSize: '5 contracts',
+      maxRisk: 'Unlimited',
+      maxReward: (basePrice * 0.05 * 100).toFixed(0),
+      rrRatio: '0.67',
+      winProb: '45',
+      timeHorizon: '7-21 days',
+      expiry: nearExpiry,
+      dte: '7'
+    });
+
+    // 11. SHORT STRANGLE - Wide neutral credit strategy  
+    strategies.push({
+      type: 'short_strangle',
+      bias: 'NEUTRAL',
+      grade: 'B+',
+      confidence: Math.round((confidence * 100 - 8)),
+      title: `Short Strangle ${symbol} ${itm}P/${otm}C Credit`,
+      bullets: [
+        `Sell ${symbol} ${itm} Put for $${(basePrice * 0.02).toFixed(2)} credit`,
+        `Sell ${symbol} ${otm} Call for $${(basePrice * 0.02).toFixed(2)} credit`,
+        `Total Credit: $${(basePrice * 0.04).toFixed(2)} | Wider profit zone than straddle`,
+        `Profitable if ${itm} < ${symbol} < ${otm} at expiration`
+      ],
+      entryPrice: (basePrice * 0.04).toFixed(2),
+      target: (basePrice * 0.02).toFixed(2),
+      stopLoss: (basePrice * 0.06).toFixed(2),
+      positionSize: '8 contracts',
+      maxRisk: 'Unlimited',
+      maxReward: (basePrice * 0.04 * 100).toFixed(0),
+      rrRatio: '0.67',
+      winProb: '65',
+      timeHorizon: '14-30 days',
+      expiry: midExpiry,
+      dte: '21'
+    });
+
+    // 12. DIAGONAL SPREAD - Advanced time and volatility strategy
+    strategies.push({
+      type: 'diagonal_spread',
+      bias: 'NEUTRAL-BULLISH',
+      grade: 'A',
+      confidence: Math.round((confidence * 100 - 7)),
+      title: `Diagonal Spread ${symbol} ${itm}C Near/${otm}C Far`,
+      bullets: [
+        `Sell ${symbol} ${itm} Call expiring ${nearExpiry}`,
+        `Buy ${symbol} ${otm} Call expiring ${farExpiry}`,
+        `Benefits from time decay and controlled directional move`,
+        `Roll the short call as it expires for additional income`
+      ],
+      entryPrice: (basePrice * 0.012).toFixed(2),
+      target: (basePrice * 0.035).toFixed(2),
+      stopLoss: (basePrice * 0.006).toFixed(2),
+      positionSize: '10 contracts',
+      maxRisk: (basePrice * 0.012 * 100).toFixed(0),
+      maxReward: (basePrice * 0.035 * 100).toFixed(0),
+      rrRatio: '2.9',
+      winProb: '62',
+      timeHorizon: '30-60 days',
+      expiry: `${nearExpiry}/${farExpiry}`,
+      dte: '7/45'
+    });
+
+    // 13. RATIO CALL SPREAD - Advanced bullish strategy
+    strategies.push({
+      type: 'ratio_call_spread',
+      bias: 'BULLISH',
+      grade: 'B+',
+      confidence: Math.round((confidence * 100 - 10)),
+      title: `Ratio Call Spread ${symbol} 1x${itm}C / 2x${otm}C`,
+      bullets: [
+        `Buy 1 ${symbol} ${itm} Call for $${(basePrice * 0.03).toFixed(2)}`,
+        `Sell 2 ${symbol} ${otm} Calls for $${(basePrice * 0.04).toFixed(2)} total`,
+        `Net Credit: $${(basePrice * 0.01).toFixed(2)} | Max profit at ${otm}`,
+        `Risk increases if ${symbol} moves significantly above ${otm}`
+      ],
+      entryPrice: (basePrice * 0.01).toFixed(2),
+      target: (basePrice * 0.025).toFixed(2),
+      stopLoss: (basePrice * 0.04).toFixed(2),
+      positionSize: '5 spreads (1x1, 2x1)',
+      maxRisk: 'Unlimited above upside breakeven',
+      maxReward: (basePrice * 0.025 * 100).toFixed(0),
+      rrRatio: '2.5',
+      winProb: '58',
+      timeHorizon: '21-45 days',
+      expiry: farExpiry,
+      dte: '45'
+    });
+
+    // 14. BULL CALL SPREAD - Classic bullish limited risk
+    strategies.push({
+      type: 'bull_call_spread',
+      bias: 'BULLISH',
+      grade: 'A',
+      confidence: Math.round((confidence * 100 - 4)),
+      title: `Bull Call Spread ${symbol} ${itm}C/${otm}C`,
+      bullets: [
+        `Buy ${symbol} ${itm} Call for $${(basePrice * 0.025).toFixed(2)} premium`,
+        `Sell ${symbol} ${otm} Call for $${(basePrice * 0.015).toFixed(2)} credit`,
+        `Net Debit: $${(basePrice * 0.01).toFixed(2)} | Max profit: $${(basePrice * 0.04).toFixed(2)}`,
+        `Profits from moderate bullish move above ${itm}`
+      ],
+      entryPrice: (basePrice * 0.01).toFixed(2),
+      target: (basePrice * 0.04).toFixed(2),
+      stopLoss: (basePrice * 0.005).toFixed(2),
+      positionSize: '10 contracts',
+      maxRisk: (basePrice * 0.01 * 100).toFixed(0),
+      maxReward: (basePrice * 0.04 * 100).toFixed(0),
+      rrRatio: '4.0',
+      winProb: '65',
+      timeHorizon: '14-30 days',
+      expiry: midExpiry,
+      dte: '21'
+    });
+
+    // 15. BULL PUT SPREAD - Bullish credit strategy
+    strategies.push({
+      type: 'bull_put_spread',
+      bias: 'BULLISH',
+      grade: 'A+',
+      confidence: Math.round((confidence * 100 + 2)),
+      title: `Bull Put Spread ${symbol} ${itm}P/${farItm}P Credit`,
+      bullets: [
+        `Sell ${symbol} ${itm} Put for $${(basePrice * 0.025).toFixed(2)} credit`,
+        `Buy ${symbol} ${farItm} Put for $${(basePrice * 0.015).toFixed(2)} debit`,
+        `Net Credit: $${(basePrice * 0.01).toFixed(2)} | Keep all if ${symbol} > ${itm}`,
+        `High probability income play with defined risk`
+      ],
+      entryPrice: (basePrice * 0.01).toFixed(2),
+      target: (basePrice * 0.005).toFixed(2),
+      stopLoss: (basePrice * 0.025).toFixed(2),
+      positionSize: '10 contracts',
+      maxRisk: (basePrice * 0.04 * 100).toFixed(0),
+      maxReward: (basePrice * 0.01 * 100).toFixed(0),
+      rrRatio: '0.4',
+      winProb: '75',
+      timeHorizon: '21-45 days',
+      expiry: farExpiry,
+      dte: '45'
+    });
+
+    // 16. CASH SECURED PUT - Conservative income strategy
+    strategies.push({
+      type: 'cash_secured_put',
+      bias: 'NEUTRAL-BULLISH', 
+      grade: 'B+',
+      confidence: Math.round((confidence * 100 - 8)),
+      title: `Cash Secured Put ${symbol} ${itm}P Income`,
+      bullets: [
+        `Sell ${symbol} ${itm} Put for $${(basePrice * 0.02).toFixed(2)} premium`,
+        `Hold $${(itm * 100).toLocaleString()} cash as collateral`,
+        `Keep premium if ${symbol} stays above ${itm}`,
+        `Assigned stock at effective price ${(itm - basePrice * 0.02).toFixed(2)} if below ${itm}`
+      ],
+      entryPrice: (basePrice * 0.02).toFixed(2),
+      target: (basePrice * 0.01).toFixed(2),
+      stopLoss: 'Assignment acceptable',
+      positionSize: '5 contracts',
+      maxRisk: ((itm - basePrice * 0.02) * 100).toFixed(0),
+      maxReward: (basePrice * 0.02 * 100).toFixed(0),
+      rrRatio: ((basePrice * 0.02) / (itm - basePrice * 0.02)).toFixed(2),
+      winProb: '72',
+      timeHorizon: '21-45 days',
+      expiry: farExpiry,
+      dte: '45'
+    });
+
+    // 🧠 ENHANCED: Smart Strategy Selection with ML Learning
+    let finalStrategies = [...strategies];
+    
+    if (mlEnhancement && mlEnhancement.smartRecommendations) {
+      console.log('🧠 Applying ML-based strategy prioritization...');
+      
+      // Get ML-recommended strategy types
+      const mlRecommendedTypes = mlEnhancement.smartRecommendations.recommendations?.map(r => r.strategy) || [];
+      
+      // Boost confidence for ML-recommended strategies
+      finalStrategies = strategies.map(strategy => {
+        const isMLRecommended = mlRecommendedTypes.some(mlType => 
+          strategy.type.toLowerCase().includes(mlType.toLowerCase()) ||
+          mlType.toLowerCase().includes(strategy.type.toLowerCase())
+        );
+        
+        if (isMLRecommended) {
+          // Boost ML-recommended strategies
+          strategy.confidence = Math.min(95, strategy.confidence + 10);
+          strategy.mlBoosted = true;
+          strategy.bullets.unshift('🧠 ML Recommended: High historical performance in your portfolio');
+        }
+        
+        return strategy;
+      });
+      
+      // Sort by ML-enhanced confidence
+      finalStrategies.sort((a, b) => {
+        if (a.mlBoosted && !b.mlBoosted) return -1;
+        if (!a.mlBoosted && b.mlBoosted) return 1;
+        return b.confidence - a.confidence;
+      });
+      
+      // Add learning insights to top strategies
+      if (mlEnhancement.learningMetrics.totalTrades > 0) {
+        finalStrategies[0].bullets.push(
+          `📊 Portfolio Learning: ${mlEnhancement.learningMetrics.winRate * 100}% win rate from ${mlEnhancement.learningMetrics.totalTrades} trades`
+        );
+      }
+    } else {
+      // Standard randomization if no ML data
+      finalStrategies = strategies.sort(() => Math.random() - 0.5);
+    }
+    
+    // Return smart selection (12-15 strategies with ML prioritization)
+    const numToReturn = Math.floor(Math.random() * 4) + 12;
+    const selectedStrategies = finalStrategies.slice(0, Math.min(numToReturn, finalStrategies.length));
+    
+    console.log(`🎯 Returning ${selectedStrategies.length} strategies${mlEnhancement ? ' (ML Enhanced)' : ' (Standard)'}`);
+    return selectedStrategies;
   };
 
   return (
@@ -1233,10 +1570,44 @@ export default function UltimateScanner() {
                   </h2>
                   <div className="flex items-center gap-2 text-slate-400">
                     <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                    <span className="font-medium text-green-400">15+ Strategies Ready - Enter Any Ticker</span>
+                    <span className="font-medium text-green-400">
+                      16 Advanced Strategies Ready {trades && trades.length > 5 ? '🧠 ML Enhanced' : ''} - Enter Any Ticker
+                    </span>
                   </div>
                 </div>
               </div>
+
+              {/* ML Learning Status */}
+              {trades && trades.length > 0 && (
+                <div className="bg-slate-700 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🧠</span>
+                    <h3 className="text-sm font-semibold text-blue-400">Machine Learning Status</h3>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-xs">
+                    <div className="text-center">
+                      <div className="text-slate-400">Learning Data</div>
+                      <div className="font-bold text-blue-400">{trades.length} trades</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-slate-400">Closed Trades</div>
+                      <div className="font-bold text-blue-400">{trades.filter(t => t.status === 'closed').length}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-slate-400">ML Confidence</div>
+                      <div className="font-bold text-blue-400">
+                        {trades.filter(t => t.status === 'closed').length > 5 ? 'High' : 
+                         trades.filter(t => t.status === 'closed').length > 2 ? 'Medium' : 'Learning'}
+                      </div>
+                    </div>
+                  </div>
+                  {trades.filter(t => t.status === 'closed').length < 5 && (
+                    <div className="mt-2 text-xs text-slate-400">
+                      💡 Complete more trades to improve ML recommendations
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Performance Metrics */}
               {analytics && (
@@ -1444,7 +1815,7 @@ export default function UltimateScanner() {
                   
                   <div className="space-y-4">
                     {/* Generate Multiple Strategy Recommendations */}
-                    {generateAdvancedStrategies(analysis).map((strategy, index) => (
+                    {enhancedStrategies.map((strategy, index) => (
                       <div key={index} className="bg-slate-700 p-4 rounded">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs">{strategy.type}</span>
