@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade Backup Utility</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0f172a;
+            color: white;
+        }
+        .container {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            background: #374151;
+            color: white;
+            border: 1px solid #4b5563;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+        }
+        .success {
+            background: #065f46;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #92400e;
+            color: #f59e0b;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Ultimate Scanner Pro - Trade Backup Utility</h1>
+        <p>This utility helps you backup and restore your trades when deploying to production.</p>
+        
+        <div id="status"></div>
+        
+        <h2>📤 Step 1: Backup Your Current Trades</h2>
+        <button onclick="backupTrades()">📤 Export Current Trades</button>
+        <textarea id="backupData" placeholder="Your trade backup will appear here..."></textarea>
+        
+        <h2>📥 Step 2: Restore Trades (After Deployment)</h2>
+        <p>After you deploy to production, paste your backup data below and restore:</p>
+        <textarea id="restoreData" placeholder="Paste your backup data here..."></textarea>
+        <button onclick="restoreTrades()">📥 Restore Trades</button>
+        
+        <h2>📋 Instructions</h2>
+        <ol>
+            <li><strong>Before Deployment:</strong> Click "Export Current Trades" and copy the backup data</li>
+            <li><strong>Deploy Your App:</strong> Use the deployment methods below</li>
+            <li><strong>After Deployment:</strong> Go to your new live site, navigate to this page, paste the backup, and click "Restore Trades"</li>
+        </ol>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong> Keep this backup safe! Your trades are stored locally in your browser and won't transfer automatically to the new domain.
+        </div>
+    </div>
+
+    <script>
+        function backupTrades() {
+            try {
+                const trades = localStorage.getItem('scannerProTrades');
+                const analytics = localStorage.getItem('scannerProAnalytics');
+                
+                if (!trades) {
+                    document.getElementById('status').innerHTML = '<div class="warning">⚠️ No trades found in localStorage</div>';
+                    return;
+                }
+                
+                const backup = {
+                    trades: JSON.parse(trades),
+                    analytics: analytics ? JSON.parse(analytics) : null,
+                    backupDate: new Date().toISOString(),
+                    version: '1.0'
+                };
+                
+                document.getElementById('backupData').value = JSON.stringify(backup, null, 2);
+                document.getElementById('status').innerHTML = `<div class="success">✅ Successfully exported ${backup.trades.length} trades!</div>`;
+                
+                // Auto-select text for easy copying
+                document.getElementById('backupData').select();
+                
+            } catch (error) {
+                document.getElementById('status').innerHTML = `<div class="warning">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function restoreTrades() {
+            try {
+                const restoreText = document.getElementById('restoreData').value;
+                if (!restoreText.trim()) {
+                    document.getElementById('status').innerHTML = '<div class="warning">⚠️ Please paste backup data first</div>';
+                    return;
+                }
+                
+                const backup = JSON.parse(restoreText);
+                
+                if (!backup.trades || !Array.isArray(backup.trades)) {
+                    throw new Error('Invalid backup format');
+                }
+                
+                // Store trades
+                localStorage.setItem('scannerProTrades', JSON.stringify(backup.trades));
+                
+                // Store analytics if available
+                if (backup.analytics) {
+                    localStorage.setItem('scannerProAnalytics', JSON.stringify(backup.analytics));
+                }
+                
+                document.getElementById('status').innerHTML = `<div class="success">✅ Successfully restored ${backup.trades.length} trades from ${new Date(backup.backupDate).toLocaleDateString()}!</div>`;
+                
+                // Clear restore field
+                document.getElementById('restoreData').value = '';
+                
+            } catch (error) {
+                document.getElementById('status').innerHTML = `<div class="warning">❌ Error restoring trades: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-backup on page load
+        window.addEventListener('load', function() {
+            const trades = localStorage.getItem('scannerProTrades');
+            if (trades) {
+                const tradeCount = JSON.parse(trades).length;
+                document.getElementById('status').innerHTML = `<div class="success">📊 Found ${tradeCount} trades ready for backup</div>`;
+            }
+        });
+    </script>
+</body>
+</html>
