@@ -1,0 +1,122 @@
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.3s
+ ○ Compiling / ...
+ ✓ Compiled / in 7.7s (458 modules)
+ ✓ Compiled in 612ms (236 modules)
+ GET / 200 in 8373ms
+ ○ Compiling /api/live-data ...
+ ✓ Compiled /api/live-data in 5.8s (252 modules)
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+
+--- Trying FMP (Primary Source) ---
+Fetching fresh data from YAHOO_FINANCE for: AAPL,AMZN,GOOGL,META,MSFT,NVDA,SPY,TSLA
+✅ Yahoo Finance: Got 8 real-time prices
+✅ Success: Got 8 records from YAHOO_FINANCE
+
+=== Data Fetch Complete ===
+Source: YAHOO_FINANCE (Real-time)
+Records: 8
+Market Open: false
+
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 6422ms
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+✅ Returning cached data
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 35ms
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+✅ Returning cached data
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 12ms
+ GET / 200 in 192ms
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+✅ Returning cached data
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 17ms
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+✅ Returning cached data
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 16ms
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+✅ Returning cached data
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 16ms
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 3.6s
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 3.2s
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+[?25h
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+[?25h
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+[?25h
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+[?25h
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+[?25h
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+[?25h
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+[?25h
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+[?25h
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+[?25h
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+[?25h
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+[?25h
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 7.7s (458 modules)
+ GET / 200 in 8565ms
+ ✓ Compiled in 797ms (236 modules)

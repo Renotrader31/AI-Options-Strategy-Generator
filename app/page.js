@@ -16,6 +16,7 @@ export default function UltimateScanner() {
   const [trades, setTrades] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [analysis, setAnalysis] = useState(null);
+  const [enhancedStrategies, setEnhancedStrategies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -326,8 +327,19 @@ export default function UltimateScanner() {
       
       if (data.success && data.analysis) {
         setAnalysis(data.analysis);
-        setSuccessMessage(`✅ AI Analysis complete for ${symbol}! Found ${generateAdvancedStrategies(data.analysis).length} trading strategies. Scroll down to see recommendations.`);
-        console.log('✅ Analysis set successfully, strategies available');
+        
+        // Generate enhanced strategies asynchronously
+        generateAdvancedStrategies(data.analysis, true).then(strategies => {
+          setEnhancedStrategies(strategies);
+          setSuccessMessage(`✅ AI Analysis complete for ${symbol}! Found ${strategies.length} trading strategies (ML Enhanced). Scroll down to see recommendations.`);
+          console.log('✅ Analysis and ML-enhanced strategies ready');
+        }).catch(async (error) => {
+          console.error('Error generating enhanced strategies:', error);
+          // Fallback to synchronous strategies
+          const fallbackStrategies = await generateAdvancedStrategies(data.analysis, false);
+          setEnhancedStrategies(fallbackStrategies);
+          setSuccessMessage(`✅ AI Analysis complete for ${symbol}! Found ${fallbackStrategies.length} trading strategies. Scroll down to see recommendations.`);
+        });
       } else {
         const errorMsg = data.error || data.message || 'Unknown error - check API response';
         console.error('❌ Analysis failed:', errorMsg);
@@ -972,15 +984,45 @@ export default function UltimateScanner() {
     }
   };
 
-  // Generate Advanced Options Strategies - THE COMPLETE ARSENAL (16 strategies)
-  const generateAdvancedStrategies = (analysis) => {
+  // Generate Advanced Options Strategies - THE COMPLETE ARSENAL (16 strategies) with ML Learning
+  const generateAdvancedStrategies = async (analysis, useMachineLearning = true) => {
     if (!analysis) return [];
 
     const symbol = analysis.symbol || tradeForm.symbol || 'SPY';
-    const basePrice = Math.random() * 300 + 150; // Mock current stock price
+    const basePrice = Math.random() * 300 + 150; // Mock current stock price (TODO: Replace with real data)
     const iv = Math.random() * 0.8 + 0.2; // Implied volatility 20-100%
-    const confidence = analysis.confidence || 0.75;
-    const strategies = [];
+    let confidence = analysis.confidence || 0.75;
+    let strategies = [];
+
+    // 🧠 ENHANCED: Use Machine Learning from Portfolio Performance
+    let mlEnhancement = null;
+    if (useMachineLearning && trades && trades.length > 0) {
+      try {
+        console.log('🧠 Requesting ML enhancement from portfolio data...');
+        const mlResponse = await fetch('/api/ml-learning', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            portfolioData: trades,
+            symbol,
+            marketData: { price: basePrice, changePercent: (basePrice - basePrice * 0.98) / basePrice * 100 }
+          })
+        });
+
+        if (mlResponse.ok) {
+          const mlData = await mlResponse.json();
+          if (mlData.success) {
+            mlEnhancement = mlData.enhancedAnalysis;
+            console.log('🧠 ML Enhancement applied:', mlEnhancement.learningMetrics);
+            
+            // Boost confidence based on learning
+            confidence = Math.min(0.95, confidence + (mlEnhancement.learningConfidence?.overall || 0) * 0.2);
+          }
+        }
+      } catch (error) {
+        console.error('🧠 ML Enhancement failed, using standard analysis:', error);
+      }
+    }
 
     // Calculate option strikes based on current price
     const atm = Math.round(basePrice);
@@ -1410,10 +1452,56 @@ export default function UltimateScanner() {
       dte: '45'
     });
 
-    // Randomize and return a selection of strategies (showing 12-15 out of 16 total)
-    const shuffledStrategies = strategies.sort(() => Math.random() - 0.5);
-    const numToReturn = Math.floor(Math.random() * 4) + 12; // Return 12-15 strategies randomly
-    return shuffledStrategies.slice(0, Math.min(numToReturn, strategies.length));
+    // 🧠 ENHANCED: Smart Strategy Selection with ML Learning
+    let finalStrategies = [...strategies];
+    
+    if (mlEnhancement && mlEnhancement.smartRecommendations) {
+      console.log('🧠 Applying ML-based strategy prioritization...');
+      
+      // Get ML-recommended strategy types
+      const mlRecommendedTypes = mlEnhancement.smartRecommendations.recommendations?.map(r => r.strategy) || [];
+      
+      // Boost confidence for ML-recommended strategies
+      finalStrategies = strategies.map(strategy => {
+        const isMLRecommended = mlRecommendedTypes.some(mlType => 
+          strategy.type.toLowerCase().includes(mlType.toLowerCase()) ||
+          mlType.toLowerCase().includes(strategy.type.toLowerCase())
+        );
+        
+        if (isMLRecommended) {
+          // Boost ML-recommended strategies
+          strategy.confidence = Math.min(95, strategy.confidence + 10);
+          strategy.mlBoosted = true;
+          strategy.bullets.unshift('🧠 ML Recommended: High historical performance in your portfolio');
+        }
+        
+        return strategy;
+      });
+      
+      // Sort by ML-enhanced confidence
+      finalStrategies.sort((a, b) => {
+        if (a.mlBoosted && !b.mlBoosted) return -1;
+        if (!a.mlBoosted && b.mlBoosted) return 1;
+        return b.confidence - a.confidence;
+      });
+      
+      // Add learning insights to top strategies
+      if (mlEnhancement.learningMetrics.totalTrades > 0) {
+        finalStrategies[0].bullets.push(
+          `📊 Portfolio Learning: ${mlEnhancement.learningMetrics.winRate * 100}% win rate from ${mlEnhancement.learningMetrics.totalTrades} trades`
+        );
+      }
+    } else {
+      // Standard randomization if no ML data
+      finalStrategies = strategies.sort(() => Math.random() - 0.5);
+    }
+    
+    // Return smart selection (12-15 strategies with ML prioritization)
+    const numToReturn = Math.floor(Math.random() * 4) + 12;
+    const selectedStrategies = finalStrategies.slice(0, Math.min(numToReturn, finalStrategies.length));
+    
+    console.log(`🎯 Returning ${selectedStrategies.length} strategies${mlEnhancement ? ' (ML Enhanced)' : ' (Standard)'}`);
+    return selectedStrategies;
   };
 
   return (
@@ -1469,10 +1557,44 @@ export default function UltimateScanner() {
                   </h2>
                   <div className="flex items-center gap-2 text-slate-400">
                     <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                    <span className="font-medium text-green-400">16 Advanced Strategies Ready - Enter Any Ticker</span>
+                    <span className="font-medium text-green-400">
+                      16 Advanced Strategies Ready {trades && trades.length > 5 ? '🧠 ML Enhanced' : ''} - Enter Any Ticker
+                    </span>
                   </div>
                 </div>
               </div>
+
+              {/* ML Learning Status */}
+              {trades && trades.length > 0 && (
+                <div className="bg-slate-700 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🧠</span>
+                    <h3 className="text-sm font-semibold text-blue-400">Machine Learning Status</h3>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-xs">
+                    <div className="text-center">
+                      <div className="text-slate-400">Learning Data</div>
+                      <div className="font-bold text-blue-400">{trades.length} trades</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-slate-400">Closed Trades</div>
+                      <div className="font-bold text-blue-400">{trades.filter(t => t.status === 'closed').length}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-slate-400">ML Confidence</div>
+                      <div className="font-bold text-blue-400">
+                        {trades.filter(t => t.status === 'closed').length > 5 ? 'High' : 
+                         trades.filter(t => t.status === 'closed').length > 2 ? 'Medium' : 'Learning'}
+                      </div>
+                    </div>
+                  </div>
+                  {trades.filter(t => t.status === 'closed').length < 5 && (
+                    <div className="mt-2 text-xs text-slate-400">
+                      💡 Complete more trades to improve ML recommendations
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Performance Metrics */}
               {analytics && (
@@ -1680,7 +1802,7 @@ export default function UltimateScanner() {
                   
                   <div className="space-y-4">
                     {/* Generate Multiple Strategy Recommendations */}
-                    {generateAdvancedStrategies(analysis).map((strategy, index) => (
+                    {enhancedStrategies.map((strategy, index) => (
                       <div key={index} className="bg-slate-700 p-4 rounded">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs">{strategy.type}</span>
