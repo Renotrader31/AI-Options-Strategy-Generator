@@ -726,12 +726,12 @@ export default function UltimateScanner() {
         let entryPrice = Math.abs(netPremium); // Always positive for display
         
         // ✅ PRIORITY: Use main Premium field if provided (user's intended entry price)
-        if (tradeForm.premium && parseFloat(tradeForm.premium) > 0) {
-          entryPrice = parseFloat(tradeForm.premium);
-          console.log('🎯 Using MAIN premium field (user override):', entryPrice);
-        } else if (entryPrice === 0) {
-          // Fallback to any leg premium if main field is empty
-          console.log('🔄 Main premium field empty, using leg calculation:', entryPrice);
+        const mainPremium = parseFloat(tradeForm.premium);
+        if (tradeForm.premium && !isNaN(mainPremium) && mainPremium >= 0) {
+          entryPrice = mainPremium;
+          console.log('🎯 Using MAIN premium field (Net Entry Price):', entryPrice, 'from input:', tradeForm.premium);
+        } else {
+          console.log('🔄 Main premium field not set, using calculated leg values. Input was:', tradeForm.premium);
         }
         
         // ✅ FALLBACK 2: If still zero, try to find any premium value in legs
