@@ -641,12 +641,16 @@ export default function UltimateScanner() {
     setError(null);
     
     try {
+      // Only create tradeData for single leg trades - multi-leg trades have different structure
       const tradeData = {
         symbol: tradeForm.symbol,
         assetType: tradeForm.assetType,
         type: tradeForm.type,
         quantity: parseInt(tradeForm.quantity),
-        entryPrice: parseFloat(tradeForm.assetType === 'OPTION' ? tradeForm.premium : tradeForm.price),
+        // Only set entryPrice for single trades, multi-leg calculates it differently
+        entryPrice: tradeForm.strategyType === 'SINGLE' ? 
+          parseFloat(tradeForm.assetType === 'OPTION' ? tradeForm.premium : tradeForm.price) :
+          0, // Placeholder - will be overridden by multi-leg logic
         stopLoss: tradeForm.stopLoss ? parseFloat(tradeForm.stopLoss) : null,
         takeProfit: tradeForm.takeProfit ? parseFloat(tradeForm.takeProfit) : null,
         notes: tradeForm.notes || 'Portfolio Tracker Entry',
@@ -672,6 +676,13 @@ export default function UltimateScanner() {
           const qty = parseFloat(leg.quantity) || 1;
           return sum + (leg.action === 'BUY' ? -premium * qty : premium * qty);
         }, 0);
+        
+        console.log('🔍 Net Premium Calculation:', {
+          legs: tradeForm.legs,
+          netPremium,
+          absoluteNetPremium: Math.abs(netPremium),
+          entryPriceCalculated: Math.round(Math.abs(netPremium) * 100) / 100
+        });
         
         newTrade = {
           id: Date.now().toString(),
