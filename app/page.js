@@ -676,6 +676,7 @@ export default function UltimateScanner() {
         newTrade = {
           id: Date.now().toString(),
           symbol: tradeForm.symbol,
+          type: 'MULTI_LEG', // Add type field for multi-leg strategies
           assetType: 'MULTI_LEG_OPTION',
           strategyType: tradeForm.strategyType,
           strategyName: strategyTemplates[tradeForm.strategyType]?.name || 'Custom Strategy',
@@ -852,7 +853,7 @@ export default function UltimateScanner() {
       
       // Calculate P&L for the closed portion
       let closePnl, closePnlPercent;
-      if (trade.type === 'BUY' || trade.type === 'BUY_TO_OPEN') {
+      if (trade.type && (trade.type === 'BUY' || trade.type === 'BUY_TO_OPEN')) {
         closePnl = (exitPrice - trade.entryPrice) * closeQty * multiplier;
       } else {
         closePnl = (trade.entryPrice - exitPrice) * closeQty * multiplier;
@@ -2260,9 +2261,9 @@ export default function UltimateScanner() {
                         </td>
                         <td className="py-2">
                           <span className={`px-2 py-1 rounded text-xs ${
-                            trade.type.includes('BUY') ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
+                            trade.type && trade.type.includes('BUY') ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
                           }`}>
-                            {trade.type}
+                            {trade.assetType === 'MULTI_LEG_OPTION' ? trade.strategyName || trade.type : trade.type}
                           </span>
                           <div className="text-xs text-slate-400">{trade.assetType}</div>
                         </td>
