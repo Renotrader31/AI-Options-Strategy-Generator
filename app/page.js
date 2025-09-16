@@ -427,64 +427,76 @@ export default function UltimateScanner() {
     });
   };
 
-  // Validate spread strategy
+  // Validate spread strategy - RELAXED VALIDATION FOR BETTER UX
   const validateSpreadStrategy = () => {
     const errors = [];
     
     if (tradeForm.strategyType === 'SINGLE') return errors;
 
-    // Validate all legs have required fields
+    // ✅ FIXED: More flexible validation - only require essential fields
+    let hasValidLeg = false;
+    
     for (let i = 0; i < tradeForm.legs.length; i++) {
       const leg = tradeForm.legs[i];
-      if (!leg.strikePrice || parseFloat(leg.strikePrice) <= 0) {
-        errors.push(`Leg ${i + 1}: Strike price is required and must be greater than 0`);
-      }
-      if (!leg.premium || parseFloat(leg.premium) <= 0) {
-        errors.push(`Leg ${i + 1}: Premium is required and must be greater than 0`);
-      }
-      if (!leg.expirationDate) {
-        errors.push(`Leg ${i + 1}: Expiration date is required`);
-      }
-      if (!leg.quantity || parseInt(leg.quantity) <= 0) {
-        errors.push(`Leg ${i + 1}: Quantity must be greater than 0`);
-      }
-    }
-
-    // Strategy-specific validation
-    if (tradeForm.strategyType === 'CALL_SPREAD') {
-      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY');
-      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL');
       
-      if (!buyLeg || !sellLeg) {
-        errors.push('Call spread requires one BUY leg and one SELL leg');
-      } else {
-        if (buyLeg.optionType !== 'CALL' || sellLeg.optionType !== 'CALL') {
-          errors.push('Call spread must use CALL options only');
-        }
-        const buyStrike = parseFloat(buyLeg.strikePrice);
-        const sellStrike = parseFloat(sellLeg.strikePrice);
-        if (buyStrike >= sellStrike) {
-          errors.push('Call spread: BUY strike must be lower than SELL strike for bull call spread');
-        }
+      // Only require strike price - most essential field
+      if (!leg.strikePrice || parseFloat(leg.strikePrice) <= 0) {
+        errors.push(`Leg ${i + 1}: Strike price is required`);
+        continue; // Skip other validations for this leg
+      }
+      
+      // If strike is valid, this counts as a valid leg
+      hasValidLeg = true;
+      
+      // Optional validations with defaults
+      if (!leg.quantity || parseInt(leg.quantity) <= 0) {
+        leg.quantity = '1'; // Default quantity
+      }
+      
+      // Premium validation only if provided
+      if (leg.premium && parseFloat(leg.premium) <= 0) {
+        errors.push(`Leg ${i + 1}: Premium must be greater than 0 if provided`);
       }
     }
     
-    if (tradeForm.strategyType === 'PUT_SPREAD') {
-      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY');
-      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL');
+    // Ensure we have at least one valid leg
+    if (!hasValidLeg) {
+      errors.push('At least one leg must have a valid strike price');
+    }
+
+    // ✅ FIXED: Relaxed strategy-specific validation - warnings instead of hard errors
+    if (tradeForm.strategyType === 'CALL_SPREAD') {
+      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY' && leg.strikePrice);
+      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL' && leg.strikePrice);
       
-      if (!buyLeg || !sellLeg) {
-        errors.push('Bull put spread requires one BUY leg and one SELL leg');
-      } else {
-        if (buyLeg.optionType !== 'PUT' || sellLeg.optionType !== 'PUT') {
-          errors.push('Bull put spread must use PUT options only');
-        }
+      // Only warn if both legs exist but have issues
+      if (buyLeg && sellLeg) {
         const buyStrike = parseFloat(buyLeg.strikePrice);
         const sellStrike = parseFloat(sellLeg.strikePrice);
-        if (sellStrike <= buyStrike) {
-          errors.push('Bull put spread: SELL strike must be higher than BUY strike');
+        
+        // Allow flexibility - just warn about common configurations
+        if (buyStrike >= sellStrike) {
+          console.warn('⚠️ Call spread: BUY strike higher than SELL strike (Bear Call Spread)');
         }
       }
+      // Don't require both legs - user might be entering one at a time
+    }
+    
+    if (tradeForm.strategyType === 'PUT_SPREAD') {
+      const buyLeg = tradeForm.legs.find(leg => leg.action === 'BUY' && leg.strikePrice);
+      const sellLeg = tradeForm.legs.find(leg => leg.action === 'SELL' && leg.strikePrice);
+      
+      // Only warn if both legs exist but have configuration issues
+      if (buyLeg && sellLeg) {
+        const buyStrike = parseFloat(buyLeg.strikePrice);
+        const sellStrike = parseFloat(sellLeg.strikePrice);
+        
+        // Allow flexibility - just log for debugging
+        if (sellStrike <= buyStrike) {
+          console.warn('⚠️ Put spread: SELL strike lower than BUY strike (Bear Put Spread)');
+        }
+      }
+      // Allow partial entry - user might be building the spread step by step
     }
 
     if (tradeForm.strategyType === 'BEAR_PUT_SPREAD') {
@@ -620,12 +632,13 @@ export default function UltimateScanner() {
         return;
       }
     } else {
-      // For multi-leg strategies, ensure at least one leg has premium data
-      const hasValidLeg = tradeForm.legs.some(leg => leg.premium && parseFloat(leg.premium) > 0);
-      if (!hasValidLeg) {
-        setError('Please enter premium for at least one leg of the spread');
+      // ✅ FIXED: More flexible validation for multi-leg strategies
+      const hasValidStrike = tradeForm.legs.some(leg => leg.strikePrice && parseFloat(leg.strikePrice) > 0);
+      if (!hasValidStrike) {
+        setError('Please enter at least one strike price for the spread');
         return;
       }
+      // Premium is optional - many traders enter spreads without exact premiums initially
     }
 
     // Validate options-specific fields (only for single options, not spreads)
