@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react';
 
 export default function UltimateScanner() {
   // State management
-  const [activeTab, setActiveTab] = useState('ml');
+  const [activeTab, setActiveTab] = useState('ai-picks');
   const [liveData, setLiveData] = useState(null);
   const [trades, setTrades] = useState([]);
   const [analytics, setAnalytics] = useState(null);
@@ -1188,23 +1188,21 @@ export default function UltimateScanner() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-blue-400 flex items-center gap-2">
-                🚀 Ultimate Scanner Pro
+                🚀 Ultimate Trading Pro
               </h1>
-              <p className="text-slate-400 text-sm">Advanced Stock Scanner with ML Trading System</p>
+              <p className="text-slate-400 text-sm">AI-Powered Strategy Generator + Portfolio Tracker</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Navigation Tabs - SIMPLIFIED */}
       <div className="bg-slate-800 border-b border-slate-700">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex space-x-8">
             {[
-              { id: 'scanner', label: '🔍 Mass Scanner', icon: '🔍' },
-              { id: 'ml', label: '🤖 ML Trading System', icon: '🤖' },
-              { id: 'portfolio', label: '💼 Portfolio Tracker', icon: '💼' },
-              { id: 'options', label: '📈 Options Flow', icon: '📈' }
+              { id: 'ai-picks', label: '🤖 AI Picks', icon: '🤖' },
+              { id: 'portfolio', label: '💼 Portfolio Tracker', icon: '💼' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -1223,19 +1221,19 @@ export default function UltimateScanner() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
-        {/* ML Trading System Content */}
-        {activeTab === 'ml' && (
+        {/* AI Picks Content */}
+        {activeTab === 'ai-picks' && (
           <div className="space-y-6">
-            {/* Performance Header */}
+            {/* AI Picks Header */}
             <div className="bg-slate-800 rounded-lg p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-semibold text-purple-400 mb-1">
-                    ML Trading System Enhanced
+                    🤖 AI Strategy Generator
                   </h2>
                   <div className="flex items-center gap-2 text-slate-400">
                     <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                    <span className="font-medium text-green-400">Live Market Analysis Ready</span>
+                    <span className="font-medium text-green-400">15+ Strategies Ready - Enter Any Ticker</span>
                   </div>
                 </div>
               </div>
@@ -1306,17 +1304,17 @@ export default function UltimateScanner() {
               )}
             </div>
 
-            {/* AI-Powered Recommendations */}
+            {/* AI Strategy Generator */}
             <div className="bg-slate-800 rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-6 text-purple-400">🤖 AI-Powered Recommendations</h2>
+              <h2 className="text-xl font-semibold mb-6 text-purple-400">🎯 Generate Trading Strategies</h2>
               
               {/* AI Trading Engine */}
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-blue-400 text-lg">🧠</span>
-                  <h3 className="text-lg font-semibold text-blue-400">AI Trading Engine</h3>
+                  <span className="text-blue-400 text-lg">🎯</span>
+                  <h3 className="text-lg font-semibold text-blue-400">Strategy Generator</h3>
                   <span className="text-xs text-slate-400 bg-slate-700 px-2 py-1 rounded">
-                    {isClient ? `Updated ${new Date().toLocaleTimeString()}` : 'Loading...'}
+                    Ready - Enter Any Ticker
                   </span>
                 </div>
                 
