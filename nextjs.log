@@ -120,3 +120,148 @@ Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
  ✓ Compiled / in 7.7s (458 modules)
  GET / 200 in 8565ms
  ✓ Compiled in 797ms (236 modules)
+ GET / 200 in 96ms
+ ○ Compiling /api/live-data ...
+ ✓ Compiled /api/live-data in 1075ms (252 modules)
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+
+--- Trying FMP (Primary Source) ---
+Fetching fresh data from YAHOO_FINANCE for: AAPL,AMZN,GOOGL,META,MSFT,NVDA,SPY,TSLA
+✅ Yahoo Finance: Got 8 real-time prices
+✅ Success: Got 8 records from YAHOO_FINANCE
+
+=== Data Fetch Complete ===
+Source: YAHOO_FINANCE (Real-time)
+Records: 8
+Market Open: false
+
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 1535ms
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+✅ Returning cached data
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 19ms
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+✅ Returning cached data
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 14ms
+ GET / 200 in 212ms
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+
+--- Trying FMP (Primary Source) ---
+Fetching fresh data from YAHOO_FINANCE for: AAPL,AMZN,GOOGL,META,MSFT,NVDA,SPY,TSLA
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+
+--- Trying FMP (Primary Source) ---
+Fetching fresh data from YAHOO_FINANCE for: AAPL,AMZN,GOOGL,META,MSFT,NVDA,SPY,TSLA
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+
+--- Trying FMP (Primary Source) ---
+Fetching fresh data from YAHOO_FINANCE for: AAPL,AMZN,GOOGL,META,MSFT,NVDA,SPY,TSLA
+✅ Yahoo Finance: Got 8 real-time prices
+✅ Success: Got 8 records from YAHOO_FINANCE
+
+=== Data Fetch Complete ===
+Source: YAHOO_FINANCE (Real-time)
+Records: 8
+Market Open: false
+
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 344ms
+✅ Yahoo Finance: Got 8 real-time prices
+✅ Success: Got 8 records from YAHOO_FINANCE
+
+=== Data Fetch Complete ===
+Source: YAHOO_FINANCE (Real-time)
+Records: 8
+Market Open: false
+
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 357ms
+✅ Yahoo Finance: Got 8 real-time prices
+✅ Success: Got 8 records from YAHOO_FINANCE
+
+=== Data Fetch Complete ===
+Source: YAHOO_FINANCE (Real-time)
+Records: 8
+Market Open: false
+
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 583ms
+ ○ Compiling /api/ml-analysis ...
+ ✓ Compiled /api/ml-analysis in 535ms (254 modules)
+ML Analysis request received for: NVDA
+ POST /api/ml-analysis 200 in 635ms
+ ✓ Compiled /api/ml-learning in 190ms (256 modules)
+🧠 ML Learning request received
+🧠 Analyzing portfolio performance for ML learning...
+ POST /api/ml-learning 500 in 422ms
+Fetching data for symbols: UUUU
+
+--- Trying FMP (Primary Source) ---
+Fetching fresh data from YAHOO_FINANCE for: UUUU
+✅ Yahoo Finance: Got 1 real-time prices
+✅ Success: Got 1 records from YAHOO_FINANCE
+
+=== Data Fetch Complete ===
+Source: YAHOO_FINANCE (Real-time)
+Records: 1
+Market Open: false
+
+ GET /api/live-data?symbols=UUUU 200 in 103ms
+ML Analysis request received for: UUUU
+ POST /api/ml-analysis 200 in 22ms
+🧠 ML Learning request received
+🧠 Analyzing portfolio performance for ML learning...
+ POST /api/ml-learning 500 in 16ms
+ GET / 200 in 196ms
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+
+--- Trying FMP (Primary Source) ---
+Fetching fresh data from YAHOO_FINANCE for: AAPL,AMZN,GOOGL,META,MSFT,NVDA,SPY,TSLA
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+
+--- Trying FMP (Primary Source) ---
+Fetching fresh data from YAHOO_FINANCE for: AAPL,AMZN,GOOGL,META,MSFT,NVDA,SPY,TSLA
+Fetching data for symbols: AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA, META, SPY
+
+--- Trying FMP (Primary Source) ---
+Fetching fresh data from YAHOO_FINANCE for: AAPL,AMZN,GOOGL,META,MSFT,NVDA,SPY,TSLA
+✅ Yahoo Finance: Got 8 real-time prices
+✅ Success: Got 8 records from YAHOO_FINANCE
+
+=== Data Fetch Complete ===
+Source: YAHOO_FINANCE (Real-time)
+Records: 8
+Market Open: false
+
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 239ms
+✅ Yahoo Finance: Got 8 real-time prices
+✅ Success: Got 8 records from YAHOO_FINANCE
+
+=== Data Fetch Complete ===
+Source: YAHOO_FINANCE (Real-time)
+Records: 8
+Market Open: false
+
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 259ms
+✅ Yahoo Finance: Got 8 real-time prices
+✅ Success: Got 8 records from YAHOO_FINANCE
+
+=== Data Fetch Complete ===
+Source: YAHOO_FINANCE (Real-time)
+Records: 8
+Market Open: false
+
+ GET /api/live-data?symbols=AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA,META,SPY&limit=8 200 in 285ms
+ ✓ Compiled in 2.8s (458 modules)
+ ✓ Compiled in 1017ms (458 modules)
+ ✓ Compiled in 1244ms (458 modules)
+ ✓ Compiled in 748ms (458 modules)
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+
+> scanner-pro-ai@1.0.0 dev
+> next dev
+
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.7s
