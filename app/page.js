@@ -601,9 +601,19 @@ export default function UltimateScanner() {
       setError('Please enter quantity');
       return;
     }
-    if (!tradeForm.price && !tradeForm.premium) {
-      setError('Please enter price/premium');
-      return;
+    // For single options/stocks, check price/premium
+    if (tradeForm.strategyType === 'SINGLE') {
+      if (!tradeForm.price && !tradeForm.premium) {
+        setError('Please enter price/premium');
+        return;
+      }
+    } else {
+      // For multi-leg strategies, ensure at least one leg has premium data
+      const hasValidLeg = tradeForm.legs.some(leg => leg.premium && parseFloat(leg.premium) > 0);
+      if (!hasValidLeg) {
+        setError('Please enter premium for at least one leg of the spread');
+        return;
+      }
     }
 
     // Validate options-specific fields (only for single options, not spreads)
