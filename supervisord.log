@@ -114,3 +114,121 @@
 2025-09-16 21:29:36,476 INFO supervisord started with pid 27833
 2025-09-16 21:29:37,481 INFO spawned: 'nextjs-app' with pid 27836
 2025-09-16 21:29:38,643 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:30:38,431 INFO waiting for nextjs-app to stop
+2025-09-16 21:30:38,437 WARN stopped: nextjs-app (terminated by SIGTERM)
+2025-09-16 21:30:38,441 INFO spawned: 'nextjs-app' with pid 28326
+2025-09-16 21:30:40,385 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:30:40,386 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:30:40,388 INFO spawned: 'nextjs-app' with pid 28371
+2025-09-16 21:30:42,286 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:30:42,286 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:30:43,289 INFO spawned: 'nextjs-app' with pid 28417
+2025-09-16 21:30:45,215 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:30:45,215 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:30:45,344 INFO spawned: 'nextjs-app' with pid 28464
+2025-09-16 21:30:47,275 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:30:47,275 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:30:48,279 INFO spawned: 'nextjs-app' with pid 28510
+2025-09-16 21:30:49,287 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:30:50,289 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:30:50,315 INFO spawned: 'nextjs-app' with pid 28557
+2025-09-16 21:30:51,283 WARN exited: nextjs-app (exit status 0; not expected)
+2025-09-16 21:30:52,286 INFO spawned: 'nextjs-app' with pid 28602
+2025-09-16 21:30:54,246 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:30:54,246 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:30:55,250 INFO spawned: 'nextjs-app' with pid 28648
+2025-09-16 21:30:57,167 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:30:57,168 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:30:58,171 INFO spawned: 'nextjs-app' with pid 28694
+2025-09-16 21:31:00,069 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:00,070 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:01,073 INFO spawned: 'nextjs-app' with pid 28744
+2025-09-16 21:31:02,076 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:03,078 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:04,082 INFO spawned: 'nextjs-app' with pid 28790
+2025-09-16 21:31:06,040 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:06,041 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:07,045 INFO spawned: 'nextjs-app' with pid 28849
+2025-09-16 21:31:09,017 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:09,017 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:10,020 INFO spawned: 'nextjs-app' with pid 28895
+2025-09-16 21:31:11,967 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:11,968 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:12,971 INFO spawned: 'nextjs-app' with pid 28942
+2025-09-16 21:31:14,899 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:14,899 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:15,903 INFO spawned: 'nextjs-app' with pid 28990
+2025-09-16 21:31:16,821 WARN exited: nextjs-app (exit status 0; not expected)
+2025-09-16 21:31:17,825 INFO spawned: 'nextjs-app' with pid 29035
+2025-09-16 21:31:19,820 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:19,821 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:20,824 INFO spawned: 'nextjs-app' with pid 29087
+2025-09-16 21:31:21,858 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:21,858 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:22,861 INFO spawned: 'nextjs-app' with pid 29176
+2025-09-16 21:31:24,777 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:24,778 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:25,781 INFO spawned: 'nextjs-app' with pid 29228
+2025-09-16 21:31:26,724 WARN exited: nextjs-app (exit status 0; not expected)
+2025-09-16 21:31:27,728 INFO spawned: 'nextjs-app' with pid 29273
+2025-09-16 21:31:29,635 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:29,635 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:30,639 INFO spawned: 'nextjs-app' with pid 29319
+2025-09-16 21:31:31,644 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:31,644 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:32,648 INFO spawned: 'nextjs-app' with pid 29364
+2025-09-16 21:31:34,551 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:34,551 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:35,555 INFO spawned: 'nextjs-app' with pid 29410
+2025-09-16 21:31:37,443 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:37,443 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:38,447 INFO spawned: 'nextjs-app' with pid 29456
+2025-09-16 21:31:40,330 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:40,330 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:41,333 INFO spawned: 'nextjs-app' with pid 29501
+2025-09-16 21:31:42,232 WARN exited: nextjs-app (exit status 0; not expected)
+2025-09-16 21:31:43,236 INFO spawned: 'nextjs-app' with pid 29546
+2025-09-16 21:31:45,135 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:45,135 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:46,139 INFO spawned: 'nextjs-app' with pid 29592
+2025-09-16 21:31:47,005 WARN exited: nextjs-app (exit status 0; not expected)
+2025-09-16 21:31:48,009 INFO spawned: 'nextjs-app' with pid 29637
+2025-09-16 21:31:49,865 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:49,865 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:50,868 INFO spawned: 'nextjs-app' with pid 29683
+2025-09-16 21:31:52,717 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:52,717 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:53,720 INFO spawned: 'nextjs-app' with pid 29729
+2025-09-16 21:31:54,566 WARN exited: nextjs-app (exit status 0; not expected)
+2025-09-16 21:31:55,570 INFO spawned: 'nextjs-app' with pid 29774
+2025-09-16 21:31:57,399 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:31:57,400 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:31:58,403 INFO spawned: 'nextjs-app' with pid 29819
+2025-09-16 21:32:00,292 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:32:00,293 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:32:01,296 INFO spawned: 'nextjs-app' with pid 29865
+2025-09-16 21:32:03,161 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:32:03,162 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:32:04,165 INFO spawned: 'nextjs-app' with pid 29911
+2025-09-16 21:32:06,069 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:32:06,069 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:32:07,072 INFO spawned: 'nextjs-app' with pid 29957
+2025-09-16 21:32:08,934 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:32:08,935 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:32:09,938 INFO spawned: 'nextjs-app' with pid 30003
+2025-09-16 21:32:10,787 WARN exited: nextjs-app (exit status 0; not expected)
+2025-09-16 21:32:11,791 INFO spawned: 'nextjs-app' with pid 30048
+2025-09-16 21:32:13,668 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:32:13,668 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:32:14,672 INFO spawned: 'nextjs-app' with pid 30094
+2025-09-16 21:32:16,559 INFO success: nextjs-app entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-09-16 21:32:16,559 INFO exited: nextjs-app (exit status 0; expected)
+2025-09-16 21:32:17,562 INFO spawned: 'nextjs-app' with pid 30140
+2025-09-16 21:32:18,481 WARN exited: nextjs-app (exit status 0; not expected)
+2025-09-16 21:32:19,485 INFO spawned: 'nextjs-app' with pid 30184
+2025-09-16 21:32:20,372 WARN exited: nextjs-app (exit status 0; not expected)
+2025-09-16 21:32:22,377 INFO spawned: 'nextjs-app' with pid 30230
+2025-09-16 21:32:23,328 WARN exited: nextjs-app (exit status 0; not expected)
+2025-09-16 21:32:26,335 INFO spawned: 'nextjs-app' with pid 30277
+2025-09-16 21:32:27,209 WARN exited: nextjs-app (exit status 0; not expected)
+2025-09-16 21:32:28,210 INFO gave up: nextjs-app entered FATAL state, too many start retries too quickly
