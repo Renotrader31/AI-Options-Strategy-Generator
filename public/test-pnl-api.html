@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Test P&L API - Live Vercel Deployment</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 15px; 
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            color: #2c3e50;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin: 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success { color: #28a745; font-weight: bold; }
+        .error { color: #dc3545; font-weight: bold; }
+        .info { color: #17a2b8; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Live P&L API Test</h1>
+            <p>Testing P&L calculations on the live Vercel deployment</p>
+        </div>
+        
+        <div class="test-section">
+            <h3>📡 API Connection Test</h3>
+            <button class="btn" onclick="testAPIConnection()">Test API Connection</button>
+            <button class="btn" onclick="createTestTrade()">Create Test Stock Trade</button>
+            <button class="btn" onclick="createTestOptionTrade()">Create Test Option Trade</button>
+            <button class="btn" onclick="closeTestTrade()">Close Test Trade</button>
+            <button class="btn" onclick="getAnalytics()">Get P&L Analytics</button>
+        </div>
+        
+        <div id="results" class="results" style="display: none;"></div>
+    </div>
+
+    <script>
+        let testTradeId = null;
+        
+        function log(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'block';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            
+            resultsDiv.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        async function testAPIConnection() {
+            clearResults();
+            log('🔌 Testing API connection...', 'info');
+            
+            try {
+                const response = await fetch('/api/trades');
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ API connection successful!', 'success');
+                    log(`📊 Current trades: ${data.count}`, 'info');
+                    log(`🕒 Server time: ${data.timestamp}`, 'info');
+                } else {
+                    log('❌ API returned error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('❌ Connection failed: ' + error.message, 'error');
+            }
+        }
+        
+        async function createTestTrade() {
+            log('📝 Creating test stock trade...', 'info');
+            
+            const testTrade = {
+                symbol: 'AAPL',
+                assetType: 'STOCK',
+                type: 'BUY',
+                quantity: 100,
+                entryPrice: 175.50,
+                notes: 'Test trade for P&L validation'
+            };
+            
+            try {
+                const response = await fetch('/api/trades', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testTrade)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    testTradeId = data.trade.id;
+                    log('✅ Test trade created successfully!', 'success');
+                    log(`📋 Trade ID: ${testTradeId}`, 'info');
+                    log(`💰 Entry: $${data.trade.entryPrice} x ${data.trade.quantity}`, 'info');
+                    log(`📊 Initial P&L: $${data.trade.pnl}`, 'info');
+                } else {
+                    log('❌ Failed to create trade: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('❌ Create trade failed: ' + error.message, 'error');
+            }
+        }
+        
+        async function createTestOptionTrade() {
+            log('📝 Creating test option trade...', 'info');
+            
+            const testOptionTrade = {
+                symbol: 'SPY',
+                assetType: 'OPTION',
+                type: 'BUY_TO_OPEN',
+                quantity: 2,
+                entryPrice: 3.25,
+                optionType: 'CALL',
+                strikePrice: 430,
+                expirationDate: '2024-10-18',
+                notes: 'Test option trade for P&L validation'
+            };
+            
+            try {
+                const response = await fetch('/api/trades', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testOptionTrade)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    testTradeId = data.trade.id;
+                    log('✅ Test option trade created successfully!', 'success');
+                    log(`📋 Trade ID: ${testTradeId}`, 'info');
+                    log(`💰 Entry: $${data.trade.entryPrice} x ${data.trade.quantity} contracts`, 'info');
+                    log(`📊 Initial P&L: $${data.trade.pnl}`, 'info');
+                    log(`⚡ Option: ${data.trade.strikePrice} ${data.trade.optionType}`, 'info');
+                } else {
+                    log('❌ Failed to create option trade: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('❌ Create option trade failed: ' + error.message, 'error');
+            }
+        }
+        
+        async function closeTestTrade() {
+            if (!testTradeId) {
+                log('❌ No test trade to close. Create a trade first!', 'error');
+                return;
+            }
+            
+            log('💼 Closing test trade with profit...', 'info');
+            
+            try {
+                const closeData = {
+                    id: testTradeId,
+                    status: 'closed',
+                    exitPrice: 185.25, // $10 profit per share for stock, or higher option premium
+                    exitDate: new Date().toISOString()
+                };
+                
+                const response = await fetch('/api/trades', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(closeData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Trade closed successfully!', 'success');
+                    log(`💰 Exit Price: $${data.trade.exitPrice}`, 'info');
+                    log(`📊 Final P&L: $${data.trade.pnl}`, data.trade.pnl > 0 ? 'success' : 'error');
+                    log(`📈 P&L %: ${data.trade.pnlPercent?.toFixed(2)}%`, data.trade.pnl > 0 ? 'success' : 'error');
+                    
+                    // Validate P&L calculation
+                    if (data.trade.assetType === 'STOCK') {
+                        const expectedPnL = (185.25 - 175.50) * 100; // $9.75 * 100 = $975
+                        if (Math.abs(data.trade.pnl - expectedPnL) < 0.01) {
+                            log('✅ P&L calculation is CORRECT!', 'success');
+                        } else {
+                            log(`❌ P&L calculation error. Expected: $${expectedPnL}, Got: $${data.trade.pnl}`, 'error');
+                        }
+                    } else if (data.trade.assetType === 'OPTION') {
+                        const expectedPnL = (185.25 - 3.25) * 2 * 100; // Price diff * contracts * 100
+                        log(`💡 Option P&L: Expected ~$${expectedPnL}, Got: $${data.trade.pnl}`, 'info');
+                    }
+                } else {
+                    log('❌ Failed to close trade: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('❌ Close trade failed: ' + error.message, 'error');
+            }
+        }
+        
+        async function getAnalytics() {
+            log('📊 Fetching P&L analytics...', 'info');
+            
+            try {
+                const response = await fetch('/api/trades?analytics=true');
+                const data = await response.json();
+                
+                if (data.success) {
+                    log('✅ Analytics retrieved successfully!', 'success');
+                    log(`📈 Total P&L: $${data.analytics.totalPnL}`, 'info');
+                    log(`🏆 Win Rate: ${data.analytics.winRate}%`, 'info');
+                    log(`📊 Total Trades: ${data.analytics.totalTrades}`, 'info');
+                    log(`✅ Closed Trades: ${data.analytics.closedTrades}`, 'info');
+                    log(`🔄 Active Trades: ${data.analytics.activeTrades}`, 'info');
+                    
+                    if (data.analytics.realizedPnL !== undefined) {
+                        log(`💰 Realized P&L: $${data.analytics.realizedPnL}`, 'info');
+                        log(`📊 Unrealized P&L: $${data.analytics.unrealizedPnL}`, 'info');
+                        log(`📈 Profit Factor: ${data.analytics.profitFactor}`, 'info');
+                        log('🎉 Enhanced P&L analytics are working!', 'success');
+                    }
+                } else {
+                    log('❌ Failed to get analytics: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('❌ Analytics failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Auto-run connection test on page load
+        window.onload = function() {
+            setTimeout(testAPIConnection, 500);
+        };
+    </script>
+</body>
+</html>
