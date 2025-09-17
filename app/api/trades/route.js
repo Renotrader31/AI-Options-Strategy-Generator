@@ -60,6 +60,29 @@ export async function GET(request) {
       headers: corsHeaders
     });
     
+    // Update unrealized P&L for active trades if requested
+    if (updatePrices) {
+      filteredTrades = filteredTrades.map(trade => {
+        if (trade.status === 'active') {
+          // Simulate current market price (in production, fetch real prices)
+          const currentPrice = trade.currentPrice * (0.98 + Math.random() * 0.04); // ±2% random movement
+          trade.currentPrice = Math.round(currentPrice * 100) / 100;
+          
+          // Calculate unrealized P&L
+          trade.unrealizedPnL = calculateCorrectPnL({
+            ...trade,
+            type: trade.type
+          }, currentPrice);
+          
+          // Calculate unrealized P&L percentage
+          const costBasis = Math.abs(trade.entryPrice * trade.quantity * (trade.assetType === 'OPTION' ? 100 : 1));
+          trade.unrealizedPnLPercent = costBasis > 0 ? (trade.unrealizedPnL / costBasis) * 100 : 0;
+          trade.unrealizedPnLPercent = Math.round(trade.unrealizedPnLPercent * 100) / 100;
+        }
+        return trade;
+      });
+    }
+    
   } catch (error) {
     console.error('Trades GET error:', error);
     return NextResponse.json({
@@ -186,16 +209,12 @@ export async function PUT(request) {
       trade.currentPrice = parseFloat(exitPrice);
       trade.exitDate = exitDate || new Date().toISOString();
       
-      // Calculate P&L with proper options multiplier
-      const multiplier = trade.assetType === 'OPTION' ? 100 : 1;
+      // Calculate P&L with CORRECTED logic for options
+      trade.pnl = calculateCorrectPnL(trade, parseFloat(exitPrice));
       
-      if (trade.type === 'BUY' || trade.type === 'BUY_TO_OPEN') {
-        trade.pnl = (trade.exitPrice - trade.entryPrice) * trade.quantity * multiplier;
-      } else {
-        trade.pnl = (trade.entryPrice - trade.exitPrice) * trade.quantity * multiplier;
-      }
-      
-      trade.pnlPercent = (trade.pnl / (trade.entryPrice * trade.quantity * multiplier)) * 100;
+      // Calculate percentage return based on cost basis
+      const costBasis = Math.abs(trade.entryPrice * trade.quantity * (trade.assetType === 'OPTION' ? 100 : 1));
+      trade.pnlPercent = costBasis > 0 ? (trade.pnl / costBasis) * 100 : 0;
     }
 
     return NextResponse.json({
@@ -264,6 +283,51 @@ export async function DELETE(request) {
   }
 }
 
+// FIXED P&L CALCULATION FUNCTION
+function calculateCorrectPnL(trade, exitPrice) {
+  const multiplier = trade.assetType === 'OPTION' ? 100 : 1;
+  const quantity = trade.quantity;
+  const entryPrice = trade.entryPrice;
+  
+  let pnl = 0;
+  
+  // Handle different trade types correctly
+  switch (trade.type?.toUpperCase()) {
+    case 'BUY':
+    case 'BUY_TO_OPEN':
+    case 'LONG':
+      // Long position: profit when price goes up
+      pnl = (exitPrice - entryPrice) * quantity * multiplier;
+      break;
+      
+    case 'SELL':
+    case 'SELL_TO_OPEN':
+    case 'SHORT':
+      // Short position: profit when price goes down
+      pnl = (entryPrice - exitPrice) * quantity * multiplier;
+      break;
+      
+    case 'SELL_TO_CLOSE':
+      // Closing a long position
+      pnl = (exitPrice - entryPrice) * quantity * multiplier;
+      break;
+      
+    case 'BUY_TO_CLOSE':
+      // Closing a short position
+      pnl = (entryPrice - exitPrice) * quantity * multiplier;
+      break;
+      
+    default:
+      // Default to long position calculation
+      console.warn(`Unknown trade type: ${trade.type}, defaulting to long calculation`);
+      pnl = (exitPrice - entryPrice) * quantity * multiplier;
+      break;
+  }
+  
+  // Round to 2 decimal places
+  return Math.round(pnl * 100) / 100;
+}
+
 // Calculate analytics from trades
 function calculateAnalytics(trades) {
   const totalTrades = trades.length;
@@ -271,26 +335,59 @@ function calculateAnalytics(trades) {
   const closedTrades = trades.filter(trade => trade.status === 'closed').length;
   const pendingTrades = trades.filter(trade => trade.status === 'pending').length;
   
-  const totalPnL = trades
+  // Calculate realized P&L from closed trades
+  const realizedPnL = trades
     .filter(trade => trade.status === 'closed')
     .reduce((sum, trade) => sum + (trade.pnl || 0), 0);
   
+  // Calculate unrealized P&L from active trades
+  const unrealizedPnL = trades
+    .filter(trade => trade.status === 'active')
+    .reduce((sum, trade) => sum + (trade.unrealizedPnL || 0), 0);
+  
+  const totalPnL = realizedPnL + unrealizedPnL;
+  
   const winningTrades = trades
-    .filter(trade => trade.status === 'closed' && trade.pnl > 0).length;
+    .filter(trade => trade.status === 'closed' && (trade.pnl || 0) > 0).length;
+  
+  const losingTrades = trades
+    .filter(trade => trade.status === 'closed' && (trade.pnl || 0) < 0).length;
   
   const winRate = closedTrades > 0 ? (winningTrades / closedTrades) * 100 : 0;
   
-  const mlScore = Math.min(85 + Math.random() * 15, 100); // Mock ML score
-  const sharpeRatio = totalPnL > 0 ? 1.2 + Math.random() * 0.8 : 0.3 + Math.random() * 0.4;
+  // Calculate average win and loss
+  const avgWin = winningTrades > 0 ? 
+    trades.filter(t => t.status === 'closed' && (t.pnl || 0) > 0)
+          .reduce((sum, t) => sum + t.pnl, 0) / winningTrades : 0;
+          
+  const avgLoss = losingTrades > 0 ? 
+    trades.filter(t => t.status === 'closed' && (t.pnl || 0) < 0)
+          .reduce((sum, t) => sum + Math.abs(t.pnl), 0) / losingTrades : 0;
+  
+  const profitFactor = avgLoss > 0 ? avgWin / avgLoss : (avgWin > 0 ? 5 : 1);
+  
+  // Calculate total capital invested
+  const totalCapital = trades.reduce((sum, trade) => {
+    const multiplier = trade.assetType === 'OPTION' ? 100 : 1;
+    return sum + Math.abs(trade.entryPrice * trade.quantity * multiplier);
+  }, 0);
+  
+  const returnOnCapital = totalCapital > 0 ? (totalPnL / totalCapital) * 100 : 0;
   
   return {
     totalTrades,
     activeTrades,
     closedTrades,
     pendingTrades,
+    realizedPnL: Math.round(realizedPnL * 100) / 100,
+    unrealizedPnL: Math.round(unrealizedPnL * 100) / 100,
     totalPnL: Math.round(totalPnL * 100) / 100,
     winRate: Math.round(winRate * 100) / 100,
-    mlScore: Math.round(mlScore * 100) / 100,
-    sharpeRatio: Math.round(sharpeRatio * 100) / 100
+    avgWin: Math.round(avgWin * 100) / 100,
+    avgLoss: Math.round(avgLoss * 100) / 100,
+    profitFactor: Math.round(profitFactor * 100) / 100,
+    returnOnCapital: Math.round(returnOnCapital * 100) / 100,
+    winningTrades,
+    losingTrades
   };
 }

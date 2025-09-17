@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 P&L Calculation Test - Fixed Version</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 15px; 
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            color: #2c3e50;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+        }
+        .test-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .test-case {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            margin: 10px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .test-case.correct {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        .test-case.incorrect {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        .test-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .test-value {
+            font-family: monospace;
+            font-weight: 700;
+        }
+        .positive { color: #28a745; }
+        .negative { color: #dc3545; }
+        .neutral { color: #6c757d; }
+        
+        .test-button {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 P&L Calculation Test Suite</h1>
+            <p>Testing fixed P&L calculations for stocks and options</p>
+        </div>
+        
+        <button class="test-button" onclick="runAllTests()">🚀 Run P&L Tests</button>
+        
+        <div id="results" class="results" style="display: none;">
+            <h2>Test Results</h2>
+            <div id="testOutput"></div>
+        </div>
+    </div>
+
+    <script>
+        // FIXED P&L CALCULATION FUNCTION (from the API)
+        function calculateCorrectPnL(trade, exitPrice) {
+          const multiplier = trade.assetType === 'OPTION' ? 100 : 1;
+          const quantity = trade.quantity;
+          const entryPrice = trade.entryPrice;
+          
+          let pnl = 0;
+          
+          // Handle different trade types correctly
+          switch (trade.type?.toUpperCase()) {
+            case 'BUY':
+            case 'BUY_TO_OPEN':
+            case 'LONG':
+              // Long position: profit when price goes up
+              pnl = (exitPrice - entryPrice) * quantity * multiplier;
+              break;
+              
+            case 'SELL':
+            case 'SELL_TO_OPEN':
+            case 'SHORT':
+              // Short position: profit when price goes down
+              pnl = (entryPrice - exitPrice) * quantity * multiplier;
+              break;
+              
+            case 'SELL_TO_CLOSE':
+              // Closing a long position
+              pnl = (exitPrice - entryPrice) * quantity * multiplier;
+              break;
+              
+            case 'BUY_TO_CLOSE':
+              // Closing a short position
+              pnl = (entryPrice - exitPrice) * quantity * multiplier;
+              break;
+              
+            default:
+              // Default to long position calculation
+              console.warn(`Unknown trade type: ${trade.type}, defaulting to long calculation`);
+              pnl = (exitPrice - entryPrice) * quantity * multiplier;
+              break;
+          }
+          
+          // Round to 2 decimal places
+          return Math.round(pnl * 100) / 100;
+        }
+        
+        // Test cases
+        const testCases = [
+            // Stock trades
+            {
+                name: "Stock Long Win",
+                trade: { assetType: 'STOCK', type: 'BUY', quantity: 100, entryPrice: 50 },
+                exitPrice: 55,
+                expected: 500,
+                description: "Buy 100 shares at $50, sell at $55"
+            },
+            {
+                name: "Stock Long Loss", 
+                trade: { assetType: 'STOCK', type: 'BUY', quantity: 100, entryPrice: 50 },
+                exitPrice: 45,
+                expected: -500,
+                description: "Buy 100 shares at $50, sell at $45"
+            },
+            {
+                name: "Stock Short Win",
+                trade: { assetType: 'STOCK', type: 'SELL', quantity: 100, entryPrice: 50 },
+                exitPrice: 45,
+                expected: 500,
+                description: "Short 100 shares at $50, cover at $45"
+            },
+            {
+                name: "Stock Short Loss",
+                trade: { assetType: 'STOCK', type: 'SELL', quantity: 100, entryPrice: 50 },
+                exitPrice: 55,
+                expected: -500,
+                description: "Short 100 shares at $50, cover at $55"
+            },
+            
+            // Options trades
+            {
+                name: "Call Option Long Win",
+                trade: { assetType: 'OPTION', type: 'BUY_TO_OPEN', quantity: 1, entryPrice: 2.50 },
+                exitPrice: 5.00,
+                expected: 250,
+                description: "Buy 1 call at $2.50, sell at $5.00"
+            },
+            {
+                name: "Call Option Long Loss",
+                trade: { assetType: 'OPTION', type: 'BUY_TO_OPEN', quantity: 1, entryPrice: 2.50 },
+                exitPrice: 1.00,
+                expected: -150,
+                description: "Buy 1 call at $2.50, sell at $1.00"
+            },
+            {
+                name: "Put Option Sold Win",
+                trade: { assetType: 'OPTION', type: 'SELL_TO_OPEN', quantity: 1, entryPrice: 3.00 },
+                exitPrice: 1.50,
+                expected: 150,
+                description: "Sell 1 put at $3.00, buy back at $1.50"
+            },
+            {
+                name: "Put Option Sold Loss",
+                trade: { assetType: 'OPTION', type: 'SELL_TO_OPEN', quantity: 1, entryPrice: 2.00 },
+                exitPrice: 4.00,
+                expected: -200,
+                description: "Sell 1 put at $2.00, buy back at $4.00"
+            },
+            
+            // Multi-contract options
+            {
+                name: "Multi-Contract Call Win",
+                trade: { assetType: 'OPTION', type: 'BUY_TO_OPEN', quantity: 5, entryPrice: 1.25 },
+                exitPrice: 2.75,
+                expected: 750,
+                description: "Buy 5 calls at $1.25, sell at $2.75"
+            },
+            {
+                name: "Multi-Contract Put Sold",
+                trade: { assetType: 'OPTION', type: 'SELL_TO_OPEN', quantity: 3, entryPrice: 4.50 },
+                exitPrice: 2.00,
+                expected: 750,
+                description: "Sell 3 puts at $4.50, buy back at $2.00"
+            }
+        ];
+        
+        function runAllTests() {
+            const resultsDiv = document.getElementById('results');
+            const outputDiv = document.getElementById('testOutput');
+            
+            resultsDiv.style.display = 'block';
+            outputDiv.innerHTML = '';
+            
+            let passedTests = 0;
+            let totalTests = testCases.length;
+            
+            testCases.forEach((testCase, index) => {
+                const calculated = calculateCorrectPnL(testCase.trade, testCase.exitPrice);
+                const passed = Math.abs(calculated - testCase.expected) < 0.01; // Allow for rounding
+                
+                if (passed) passedTests++;
+                
+                const testDiv = document.createElement('div');
+                testDiv.className = `test-case ${passed ? 'correct' : 'incorrect'}`;
+                
+                testDiv.innerHTML = `
+                    <div>
+                        <div class="test-label">${testCase.name}</div>
+                        <div style="font-size: 0.9rem; color: #6c757d;">${testCase.description}</div>
+                    </div>
+                    <div>
+                        <div class="test-label">Expected</div>
+                        <div class="test-value ${testCase.expected >= 0 ? 'positive' : 'negative'}">$${testCase.expected.toFixed(2)}</div>
+                    </div>
+                    <div>
+                        <div class="test-label">Calculated</div>
+                        <div class="test-value ${calculated >= 0 ? 'positive' : 'negative'}">$${calculated.toFixed(2)}</div>
+                    </div>
+                    <div>
+                        <div class="test-label">Result</div>
+                        <div class="test-value ${passed ? 'positive' : 'negative'}">
+                            ${passed ? '✅ PASS' : '❌ FAIL'}
+                        </div>
+                    </div>
+                `;
+                
+                outputDiv.appendChild(testDiv);
+            });
+            
+            // Add summary
+            const summaryDiv = document.createElement('div');
+            summaryDiv.style.cssText = 'margin-top: 20px; padding: 15px; background: white; border-radius: 8px; text-align: center;';
+            summaryDiv.innerHTML = `
+                <h3>Test Summary</h3>
+                <p style="font-size: 1.2rem; margin: 10px 0;">
+                    <span class="${passedTests === totalTests ? 'positive' : 'negative'}">
+                        ${passedTests} / ${totalTests} tests passed
+                    </span>
+                </p>
+                <p style="color: #6c757d;">
+                    ${passedTests === totalTests ? 
+                        '🎉 All P&L calculations are working correctly!' : 
+                        '⚠️ Some P&L calculations need attention.'}
+                </p>
+            `;
+            
+            outputDiv.appendChild(summaryDiv);
+        }
+    </script>
+</body>
+</html>
