@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Live Data Test - Real-Time Prices</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 50px auto; 
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .stock-card { 
+            background: #f8f9fa; 
+            border: 2px solid #e9ecef; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .symbol { font-size: 1.5rem; font-weight: bold; }
+        .price { font-size: 1.3rem; font-weight: bold; color: #007bff; }
+        .change { font-weight: bold; }
+        .positive { color: #28a745; }
+        .negative { color: #dc3545; }
+        .refresh-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .refresh-btn:hover { background: #0056b3; }
+        .status { 
+            padding: 10px; 
+            margin: 15px 0; 
+            border-radius: 5px; 
+            background: #d1ecf1; 
+            border: 1px solid #bee5eb;
+        }
+        .last-update {
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Live Data Test</h1>
+        <p>Testing real-time prices from your paid FMP API</p>
+        
+        <div class="status" id="status">
+            <strong>Status:</strong> <span id="statusText">Loading...</span><br>
+            <strong>Source:</strong> <span id="sourceText">Unknown</span><br>
+            <strong>Market:</strong> <span id="marketText">Unknown</span>
+        </div>
+        
+        <button class="refresh-btn" onclick="fetchLiveData()">🔄 Refresh Data</button>
+        <button class="refresh-btn" onclick="fetchLiveData(true)">⚡ Force Refresh (No Cache)</button>
+        
+        <div id="stockData">
+            <div class="stock-card">
+                <div>Loading stock data...</div>
+            </div>
+        </div>
+        
+        <div class="last-update" id="lastUpdate">
+            Last updated: Never
+        </div>
+    </div>
+
+    <script>
+        async function fetchLiveData(forceRefresh = false) {
+            const statusText = document.getElementById('statusText');
+            const sourceText = document.getElementById('sourceText');
+            const marketText = document.getElementById('marketText');
+            const stockData = document.getElementById('stockData');
+            const lastUpdate = document.getElementById('lastUpdate');
+            
+            statusText.textContent = 'Fetching...';
+            
+            try {
+                // Add cache busting parameter if force refresh
+                const cacheBuster = forceRefresh ? `&cb=${Date.now()}` : '';
+                const url = `/api/live-data?symbols=SPY,NVDA,AAPL,MSFT,GOOGL&limit=5${cacheBuster}`;
+                
+                const response = await fetch(url, {
+                    cache: forceRefresh ? 'no-cache' : 'default',
+                    headers: forceRefresh ? {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    } : {}
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    statusText.textContent = '✅ Success';
+                    sourceText.textContent = data.source + (data.cached ? ' (Cached)' : ' (Fresh)');
+                    marketText.textContent = data.marketOpen ? 'Open' : 'Closed';
+                    
+                    // Display stock data
+                    stockData.innerHTML = data.data.map(stock => `
+                        <div class="stock-card">
+                            <div>
+                                <div class="symbol">${stock.symbol}</div>
+                                <div style="font-size: 0.9rem; color: #6c757d;">Volume: ${(stock.volume / 1000000).toFixed(1)}M</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="price">$${stock.price.toFixed(2)}</div>
+                                <div class="change ${stock.changePercent >= 0 ? 'positive' : 'negative'}">
+                                    ${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    lastUpdate.textContent = `Last updated: ${new Date(data.timestamp).toLocaleString()}`;
+                    
+                } else {
+                    statusText.textContent = '❌ Failed';
+                    sourceText.textContent = 'Error';
+                    stockData.innerHTML = '<div class="stock-card"><div>Failed to fetch data: ' + (data.error || 'Unknown error') + '</div></div>';
+                }
+                
+            } catch (error) {
+                statusText.textContent = '❌ Error';
+                sourceText.textContent = 'Network Error';
+                stockData.innerHTML = '<div class="stock-card"><div>Network error: ' + error.message + '</div></div>';
+            }
+        }
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => fetchLiveData(), 30000);
+        
+        // Initial load
+        fetchLiveData();
+    </script>
+</body>
+</html>
