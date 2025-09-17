@@ -938,14 +938,14 @@ export default function UltimateScanner() {
       let closePnl, closePnlPercent;
       
       if (trade.assetType === 'MULTI_LEG_OPTION') {
-        // Multi-leg strategies: P&L is difference in net premium per contract * contracts
-        // Premium values are already per-contract, just multiply by quantity
+        // Multi-leg strategies: P&L is net premium difference per contract * contracts
+        // For spreads, premium values are already net of the legs, NO 100x multiplier
         const isCredit = trade.netPremium > 0;
         if (isCredit) {
           // Credit spread: P&L = collected credit - cost to close
           closePnl = (trade.entryPrice - exitPrice) * closeQty;
         } else {
-          // Debit spread: P&L = exit value - paid debit
+          // Debit spread: P&L = exit value - paid debit  
           closePnl = (exitPrice - trade.entryPrice) * closeQty;
         }
       } else if (trade.assetType === 'OPTION') {
