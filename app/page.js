@@ -3,6 +3,8 @@
  * 
  * Fixed analyze button issue and added comprehensive options strategies
  * including jade lizard, iron condors, butterfly spreads, and more.
+ * 
+ * LATEST: P&L Calculation Bug Fixed - v2.1.1 (2025-09-17)
  */
 
 'use client';
