@@ -1036,6 +1036,55 @@ export default function UltimateScanner() {
     }
   };
 
+  // Delete trade function - allows removing trades from portfolio
+  const handleDeleteTrade = (tradeToDelete) => {
+    // Show confirmation dialog
+    const isConfirmed = window.confirm(
+      `Are you sure you want to delete this trade?\n\n` +
+      `Symbol: ${tradeToDelete.symbol}\n` +
+      `Type: ${tradeToDelete.assetType === 'MULTI_LEG_OPTION' ? tradeToDelete.strategyName : tradeToDelete.type}\n` +
+      `Quantity: ${tradeToDelete.quantity}\n` +
+      `Entry Price: $${tradeToDelete.entryPrice?.toFixed(2)}\n` +
+      `Status: ${tradeToDelete.status}\n\n` +
+      `This action cannot be undone.`
+    );
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    try {
+      // Remove the trade from the trades array
+      const updatedTrades = trades.filter(trade => trade.id !== tradeToDelete.id);
+      setTrades(updatedTrades);
+
+      // Update localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('scannerProTrades', JSON.stringify(updatedTrades));
+        console.log('🗑️ Trade deleted and localStorage updated - Remaining trades:', updatedTrades.length);
+      }
+
+      // Refresh analytics with updated data
+      calculateLocalAnalytics(updatedTrades);
+
+      // Show success message
+      setSuccessMessage(
+        `✅ Trade deleted successfully! ${tradeToDelete.symbol} (${tradeToDelete.assetType === 'MULTI_LEG_OPTION' ? tradeToDelete.strategyName : tradeToDelete.type}) removed from portfolio.`
+      );
+      
+      console.log('🗑️ Trade deleted:', {
+        id: tradeToDelete.id,
+        symbol: tradeToDelete.symbol,
+        type: tradeToDelete.type,
+        remainingTrades: updatedTrades.length
+      });
+
+    } catch (err) {
+      console.error('💥 Delete trade error:', err);
+      setError('Error deleting trade: ' + err.message);
+    }
+  };
+
   // Generate Advanced Options Strategies - THE COMPLETE ARSENAL (16 strategies) with ML Learning
   const generateAdvancedStrategies = async (analysis, useMachineLearning = true) => {
     if (!analysis) return [];
@@ -2753,26 +2802,37 @@ export default function UltimateScanner() {
                           </span>
                         </td>
                         <td className="py-2 text-center">
-                          {trade.status === 'active' && (
-                            <div className="flex flex-col gap-1">
-                              <button
-                                onClick={() => handleCloseTrade(trade)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                                disabled={loading}
-                                title={`Close some or all of ${trade.quantity} ${trade.assetType === 'OPTION' ? 'contracts' : 'shares'}`}
-                              >
-                                Close Position
-                              </button>
-                              <div className="text-xs text-slate-400">
-                                Qty: {trade.quantity}
-                              </div>
-                            </div>
-                          )}
-                          {trade.status === 'closed' && (
-                            <span className="text-xs text-slate-500">
-                              ✓ Closed
-                            </span>
-                          )}
+                          <div className="flex flex-col gap-1">
+                            {trade.status === 'active' && (
+                              <>
+                                <button
+                                  onClick={() => handleCloseTrade(trade)}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                                  disabled={loading}
+                                  title={`Close some or all of ${trade.quantity} ${trade.assetType === 'OPTION' ? 'contracts' : 'shares'}`}
+                                >
+                                  Close Position
+                                </button>
+                                <div className="text-xs text-slate-400">
+                                  Qty: {trade.quantity}
+                                </div>
+                              </>
+                            )}
+                            {trade.status === 'closed' && (
+                              <span className="text-xs text-slate-500 mb-2">
+                                ✓ Closed
+                              </span>
+                            )}
+                            {/* Delete button - available for all trades */}
+                            <button
+                              onClick={() => handleDeleteTrade(trade)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                              disabled={loading}
+                              title={`Delete this trade from portfolio (cannot be undone)`}
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
