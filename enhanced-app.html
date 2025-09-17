@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 AI Options Strategy Generator with P&L Analysis</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 15px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header { 
+            background: linear-gradient(135deg, #2c3e50, #34495e); 
+            color: white; 
+            padding: 30px; 
+            text-align: center; 
+        }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .header p { font-size: 1.1rem; opacity: 0.9; }
+        .ticker-input { 
+            padding: 30px; 
+            background: #f8f9fa; 
+            border-bottom: 1px solid #e9ecef;
+        }
+        .input-group { 
+            display: flex; 
+            gap: 15px; 
+            max-width: 600px; 
+            margin: 0 auto; 
+        }
+        .input-group input { 
+            flex: 1; 
+            padding: 15px; 
+            border: 2px solid #ddd; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            transition: border-color 0.3s;
+        }
+        .input-group input:focus { 
+            outline: none; 
+            border-color: #667eea; 
+        }
+        .analyze-btn { 
+            padding: 15px 30px; 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            font-weight: 600;
+            cursor: pointer; 
+            transition: transform 0.3s;
+        }
+        .analyze-btn:hover { transform: translateY(-2px); }
+        .analyze-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .results { padding: 30px; }
+        .stock-info { 
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb); 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 30px; 
+        }
+        .strategies-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); 
+            gap: 20px; 
+        }
+        .strategy-card { 
+            background: #fff; 
+            border: 2px solid #e9ecef; 
+            border-radius: 10px; 
+            padding: 20px; 
+            transition: all 0.3s;
+        }
+        .strategy-card:hover { 
+            border-color: #667eea; 
+            transform: translateY(-5px); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .strategy-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 15px; 
+        }
+        .strategy-name { 
+            font-size: 1.3rem; 
+            font-weight: 700; 
+            color: #2c3e50; 
+        }
+        .strategy-bias { 
+            padding: 5px 12px; 
+            border-radius: 20px; 
+            font-size: 0.9rem; 
+            font-weight: 600; 
+        }
+        .bullish { background: #d4edda; color: #155724; }
+        .bearish { background: #f8d7da; color: #721c24; }
+        .neutral { background: #d1ecf1; color: #0c5460; }
+        .trade-setup { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 15px 0; 
+        }
+        .trade-setup h4 { color: #2c3e50; margin-bottom: 10px; }
+        .trade-action { 
+            font-weight: 600; 
+            color: #28a745; 
+            font-size: 1.1rem;
+        }
+        .strategy-details { margin-top: 15px; }
+        .detail-row { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 8px; 
+        }
+        .loading { 
+            text-align: center; 
+            padding: 40px; 
+            font-size: 1.2rem; 
+            color: #6c757d; 
+        }
+        .error { 
+            background: #f8d7da; 
+            color: #721c24; 
+            padding: 20px; 
+            border-radius: 10px; 
+            text-align: center; 
+        }
+        .enhanced-badge { 
+            background: linear-gradient(135deg, #28a745, #20c997); 
+            color: white; 
+            padding: 3px 8px; 
+            border-radius: 12px; 
+            font-size: 0.8rem; 
+            font-weight: 600; 
+            margin-left: 10px;
+        }
+        
+        /* P&L Analysis Styles */
+        .pnl-toggle {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        .pnl-toggle:hover {
+            background: #138496;
+        }
+        
+        .pnl-analysis {
+            margin-top: 15px;
+            padding: 15px;
+            background: linear-gradient(145deg, #f8f9fa, #ffffff);
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .pnl-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .pnl-item {
+            text-align: center;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .pnl-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+        
+        .pnl-value {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        
+        .pnl-positive { color: #28a745; }
+        .pnl-negative { color: #dc3545; }
+        .pnl-neutral { color: #6c757d; }
+        
+        .greeks-section {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .greeks-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .greek-item {
+            text-align: center;
+            padding: 6px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .greek-name {
+            font-size: 0.7rem;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+        
+        .greek-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 AI Options Strategy Generator</h1>
+            <p>Advanced P&L Analysis with Black-Scholes Pricing <span class="enhanced-badge">P&L ENHANCED</span></p>
+        </div>
+        
+        <div class="ticker-input">
+            <div class="input-group">
+                <input type="text" id="tickerInput" placeholder="Enter stock ticker (e.g., AAPL, TSLA, SPY)" maxlength="10">
+                <button class="analyze-btn" onclick="analyzeStock()">
+                    <span id="btnText">Analyze with P&L</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="results" id="results" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        import { enhancedStrategyFactory } from './src/pricing/enhancedStrategyFactory.js';
+        
+        let currentStock = null;
+        
+        window.analyzeStock = async function() {
+            const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
+            if (!ticker) return;
+            
+            setLoading(true);
+            
+            try {
+                // Get stock data and generate enhanced strategies with P&L
+                const stockData = await getStockData(ticker);
+                const enhancedStrategies = await generateEnhancedStrategies(stockData);
+                displayEnhancedResults(stockData, enhancedStrategies);
+            } catch (error) {
+                displayError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        function setLoading(loading) {
+            const btn = document.querySelector('.analyze-btn');
+            const btnText = document.getElementById('btnText');
+            
+            if (loading) {
+                btn.disabled = true;
+                btnText.textContent = 'Analyzing P&L...';
+            } else {
+                btn.disabled = false;
+                btnText.textContent = 'Analyze with P&L';
+            }
+        }
+        
+        async function getStockData(ticker) {
+            // Simulate live market data
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
+            
+            const mockData = {
+                symbol: ticker,
+                currentPrice: 150 + Math.random() * 100,
+                change: (Math.random() - 0.5) * 10,
+                volume: Math.floor(Math.random() * 10000000),
+                impliedVolatility: (20 + Math.random() * 30) / 100, // Convert to decimal
+                optionsExpiry: "30-45 DTE",
+                riskFreeRate: 0.05
+            };
+            
+            return mockData;
+        }
+        
+        async function generateEnhancedStrategies(stockData) {
+            const strategies = [];
+            const currentPrice = stockData.currentPrice;
+            const iv = stockData.impliedVolatility * 100; // Convert back to percentage for comparison
+            
+            // Market data for P&L calculations
+            const marketData = {
+                currentPrice: currentPrice,
+                impliedVolatility: stockData.impliedVolatility,
+                riskFreeRate: stockData.riskFreeRate
+            };
+            
+            // Pricing parameters
+            const pricingParams = {
+                currentPrice: currentPrice,
+                daysToExpiry: 30,
+                impliedVolatility: stockData.impliedVolatility,
+                riskFreeRate: stockData.riskFreeRate
+            };
+            
+            // Generate Bull Put Spread with P&L
+            try {
+                const bullPutResult = enhancedStrategyFactory.createStrategyWithPnL(
+                    'Bull Put Spread', 
+                    {
+                        shortStrike: Math.round(currentPrice * 0.95),
+                        longStrike: Math.round(currentPrice * 0.90),
+                        expiry: stockData.optionsExpiry,
+                        contracts: 1
+                    },
+                    marketData,
+                    pricingParams
+                );
+                
+                if (bullPutResult.isValid) {
+                    strategies.push({
+                        ...bullPutResult,
+                        recommendation: 'MODERATE'
+                    });
+                }
+            } catch (e) {
+                console.error('Bull Put Spread error:', e);
+            }
+            
+            // Generate Bull Call Spread with P&L
+            try {
+                const bullCallResult = enhancedStrategyFactory.createStrategyWithPnL(
+                    'Bull Call Spread',
+                    {
+                        longStrike: Math.round(currentPrice * 1.02),
+                        shortStrike: Math.round(currentPrice * 1.08),
+                        expiry: stockData.optionsExpiry,
+                        contracts: 1
+                    },
+                    marketData,
+                    pricingParams
+                );
+                
+                if (bullCallResult.isValid) {
+                    strategies.push({
+                        ...bullCallResult,
+                        recommendation: iv < 25 ? 'HIGH' : 'MODERATE'
+                    });
+                }
+            } catch (e) {
+                console.error('Bull Call Spread error:', e);
+            }
+            
+            // Generate Bear Call Spread with P&L
+            try {
+                const bearCallResult = enhancedStrategyFactory.createStrategyWithPnL(
+                    'Bear Call Spread',
+                    {
+                        shortStrike: Math.round(currentPrice * 1.02),
+                        longStrike: Math.round(currentPrice * 1.08),
+                        expiry: stockData.optionsExpiry,
+                        contracts: 1
+                    },
+                    marketData,
+                    pricingParams
+                );
+                
+                if (bearCallResult.isValid) {
+                    strategies.push({
+                        ...bearCallResult,
+                        recommendation: iv > 30 ? 'HIGH' : 'LOW'
+                    });
+                }
+            } catch (e) {
+                console.error('Bear Call Spread error:', e);
+            }
+            
+            // Generate Iron Condor with P&L
+            try {
+                const ironCondorResult = enhancedStrategyFactory.createStrategyWithPnL(
+                    'Iron Condor',
+                    {
+                        putSellStrike: Math.round(currentPrice * 0.95),
+                        putBuyStrike: Math.round(currentPrice * 0.90),
+                        callSellStrike: Math.round(currentPrice * 1.05),
+                        callBuyStrike: Math.round(currentPrice * 1.10),
+                        expiry: stockData.optionsExpiry,
+                        contracts: 1
+                    },
+                    marketData,
+                    pricingParams
+                );
+                
+                if (ironCondorResult.isValid) {
+                    strategies.push({
+                        ...ironCondorResult,
+                        recommendation: iv > 30 ? 'HIGH' : 'MODERATE'
+                    });
+                }
+            } catch (e) {
+                console.error('Iron Condor error:', e);
+            }
+            
+            return strategies.sort((a, b) => {
+                const order = { 'HIGH': 3, 'MODERATE': 2, 'LOW': 1 };
+                return order[b.recommendation] - order[a.recommendation];
+            });
+        }
+        
+        function displayEnhancedResults(stockData, strategies) {
+            const resultsDiv = document.getElementById('results');
+            const changeClass = stockData.change >= 0 ? 'pnl-positive' : 'pnl-negative';
+            const changeSymbol = stockData.change >= 0 ? '+' : '';
+            
+            resultsDiv.innerHTML = `
+                <div class="stock-info">
+                    <h2>📊 ${stockData.symbol} Analysis</h2>
+                    <div class="detail-row">
+                        <span><strong>Current Price:</strong></span>
+                        <span>$${stockData.currentPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span><strong>Price Change:</strong></span>
+                        <span class="${changeClass}">${changeSymbol}${stockData.change.toFixed(2)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span><strong>Implied Volatility:</strong></span>
+                        <span>${(stockData.impliedVolatility * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="detail-row">
+                        <span><strong>Volume:</strong></span>
+                        <span>${stockData.volume.toLocaleString()}</span>
+                    </div>
+                </div>
+                
+                <h3>🎯 Options Strategies with Advanced P&L Analysis</h3>
+                <p style="margin-bottom: 20px; color: #28a745; font-weight: 600;">
+                    ✅ Black-Scholes pricing • Greeks analysis • Risk metrics • Profit probability
+                </p>
+                
+                <div class="strategies-grid">
+                    ${strategies.map(strategy => createEnhancedStrategyCard(strategy)).join('')}
+                </div>
+            `;
+            
+            resultsDiv.style.display = 'block';
+        }
+        
+        function createEnhancedStrategyCard(strategyResult) {
+            const strategy = strategyResult.strategy;
+            const pnlAnalysis = strategyResult.pnlAnalysis;
+            const riskMetrics = strategyResult.riskMetrics;
+            
+            const biasClass = strategy.marketBias?.toLowerCase() || 'neutral';
+            const recommendationColor = {
+                'HIGH': '#28a745',
+                'MODERATE': '#ffc107', 
+                'LOW': '#6c757d'
+            };
+            
+            // Generate P&L summary
+            const pnlSummary = pnlAnalysis ? `
+                <div class="pnl-analysis">
+                    <div class="pnl-summary">
+                        <div class="pnl-item">
+                            <div class="pnl-label">Current P&L</div>
+                            <div class="pnl-value ${pnlAnalysis.totalPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}">
+                                ${pnlAnalysis.totalPnL >= 0 ? '+' : ''}$${pnlAnalysis.totalPnL.toFixed(0)}
+                            </div>
+                        </div>
+                        <div class="pnl-item">
+                            <div class="pnl-label">Max Profit</div>
+                            <div class="pnl-value pnl-positive">
+                                ${pnlAnalysis.maxProfit.isUnlimited ? '∞' : '$' + pnlAnalysis.maxProfit.amount.toFixed(0)}
+                            </div>
+                        </div>
+                        <div class="pnl-item">
+                            <div class="pnl-label">Max Loss</div>
+                            <div class="pnl-value pnl-negative">
+                                ${pnlAnalysis.maxLoss.isUnlimited ? '∞' : '$' + pnlAnalysis.maxLoss.amount.toFixed(0)}
+                            </div>
+                        </div>
+                        <div class="pnl-item">
+                            <div class="pnl-label">Profit Prob.</div>
+                            <div class="pnl-value pnl-neutral">
+                                ${(pnlAnalysis.profitProbability * 100).toFixed(0)}%
+                            </div>
+                        </div>
+                        <div class="pnl-item">
+                            <div class="pnl-label">Risk Grade</div>
+                            <div class="pnl-value" style="color: ${getGradeColor(riskMetrics.overallRiskGrade)};">
+                                ${riskMetrics.overallRiskGrade}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="greeks-section">
+                        <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 8px;">
+                            <strong>Greeks Analysis</strong>
+                        </div>
+                        <div class="greeks-grid">
+                            <div class="greek-item">
+                                <div class="greek-name">Delta</div>
+                                <div class="greek-value ${pnlAnalysis.greeks.delta >= 0 ? 'pnl-positive' : 'pnl-negative'}">
+                                    ${pnlAnalysis.greeks.delta.toFixed(2)}
+                                </div>
+                            </div>
+                            <div class="greek-item">
+                                <div class="greek-name">Gamma</div>
+                                <div class="greek-value ${pnlAnalysis.greeks.gamma >= 0 ? 'pnl-positive' : 'pnl-negative'}">
+                                    ${pnlAnalysis.greeks.gamma.toFixed(3)}
+                                </div>
+                            </div>
+                            <div class="greek-item">
+                                <div class="greek-name">Theta</div>
+                                <div class="greek-value ${pnlAnalysis.greeks.theta >= 0 ? 'pnl-positive' : 'pnl-negative'}">
+                                    ${pnlAnalysis.greeks.theta.toFixed(1)}
+                                </div>
+                            </div>
+                            <div class="greek-item">
+                                <div class="greek-name">Vega</div>
+                                <div class="greek-value ${pnlAnalysis.greeks.vega >= 0 ? 'pnl-positive' : 'pnl-negative'}">
+                                    ${pnlAnalysis.greeks.vega.toFixed(1)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ` : '<div class="pnl-analysis">P&L analysis unavailable</div>';
+            
+            return `
+                <div class="strategy-card">
+                    <div class="strategy-header">
+                        <div class="strategy-name">${strategy.name}</div>
+                        <span class="strategy-bias ${biasClass}">${strategy.marketBias || 'Neutral'}</span>
+                    </div>
+                    
+                    <p style="color: #6c757d; margin-bottom: 15px;">${strategy.description}</p>
+                    
+                    <div class="trade-setup">
+                        <h4>✅ Trade Setup:</h4>
+                        <div class="trade-action">${strategyResult.tradeSetup.action}</div>
+                        <small style="color: #6c757d;">Expiry: ${strategyResult.tradeSetup.expiry}</small>
+                    </div>
+                    
+                    ${pnlSummary}
+                    
+                    <div class="strategy-details">
+                        <div class="detail-row">
+                            <span><strong>Risk Level:</strong></span>
+                            <span>${strategy.riskLevel || 'Moderate'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span><strong>Win Rate:</strong></span>
+                            <span>${strategy.winRate || 65}%</span>
+                        </div>
+                        <div class="detail-row">
+                            <span><strong>Recommendation:</strong></span>
+                            <span style="color: ${recommendationColor[strategyResult.recommendation]}; font-weight: 600;">
+                                ${strategyResult.recommendation}
+                            </span>
+                        </div>
+                        ${riskMetrics ? `
+                        <div class="detail-row">
+                            <span><strong>Risk/Reward:</strong></span>
+                            <span style="font-weight: 600;">
+                                ${riskMetrics.riskRewardRatio === Infinity ? '∞' : riskMetrics.riskRewardRatio + ':1'}
+                            </span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 10px; background: linear-gradient(145deg, #e8f5e8, #d4edda); border-radius: 5px; font-size: 0.9rem;">
+                        <strong>🚀 ENHANCED:</strong> Full Black-Scholes P&L analysis with Greeks and risk metrics!
+                    </div>
+                </div>
+            `;
+        }
+        
+        function getGradeColor(grade) {
+            const colors = {
+                'A': '#28a745', 'B': '#28a745', 'C': '#ffc107', 'D': '#fd7e14', 'F': '#dc3545'
+            };
+            return colors[grade] || '#6c757d';
+        }
+        
+        function displayError(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="error">
+                    <h3>❌ Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+            resultsDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
