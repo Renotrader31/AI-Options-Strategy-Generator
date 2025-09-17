@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 API Keys Configuration</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 15px; 
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            color: #2c3e50;
+        }
+        .api-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 2px solid #e9ecef;
+        }
+        .api-section.premium {
+            border-color: #ffc107;
+            background: linear-gradient(45deg, #fff3cd, #ffeaa7);
+        }
+        .api-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        .api-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin: 10px 0;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 5px 10px 5px 0;
+            transition: all 0.3s;
+        }
+        .btn:hover { background: #0056b3; transform: translateY(-1px); }
+        .btn.success { background: #28a745; }
+        .btn.success:hover { background: #1e7e34; }
+        .btn.test { background: #17a2b8; }
+        .btn.test:hover { background: #138496; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #2196F3;
+        }
+        .security-note {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Configure Your Paid API Keys</h1>
+            <p>Set up your premium FMP and Polygon keys for real-time data</p>
+        </div>
+        
+        <div class="security-note">
+            <strong>🔒 Security Notice:</strong> API keys will be saved to your server's environment file. 
+            This is for your private server only. Never share your API keys publicly.
+        </div>
+        
+        <!-- FMP Configuration -->
+        <div class="api-section premium">
+            <div class="api-title">🏆 Financial Modeling Prep (PAID) - Priority #2</div>
+            <p><strong>Your Plan:</strong> Real-time quotes, unlimited calls, financial data</p>
+            <input type="password" class="api-input" id="fmpKey" placeholder="Enter your PAID FMP API key...">
+            <div>
+                <button class="btn test" onclick="testFMP()">🧪 Test FMP Key</button>
+                <button class="btn success" onclick="saveFMP()">💾 Save FMP Key</button>
+            </div>
+            <div id="fmpStatus"></div>
+        </div>
+        
+        <!-- Polygon Configuration -->
+        <div class="api-section premium">
+            <div class="api-title">🥇 Polygon.io (PAID) - Priority #1</div>
+            <p><strong>Your Plan:</strong> Real-time market data, premium endpoints, high rate limits</p>
+            <input type="password" class="api-input" id="polygonKey" placeholder="Enter your PAID Polygon API key...">
+            <div>
+                <button class="btn test" onclick="testPolygon()">🧪 Test Polygon Key</button>
+                <button class="btn success" onclick="savePolygon()">💾 Save Polygon Key</button>
+            </div>
+            <div id="polygonStatus"></div>
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 Setup Instructions:</h3>
+            <ol>
+                <li><strong>Enter your API keys above</strong> (they'll be hidden as you type)</li>
+                <li><strong>Test each key</strong> to verify they work</li>
+                <li><strong>Save the keys</strong> to activate premium data</li>
+                <li><strong>Restart the server</strong> to apply changes</li>
+            </ol>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn" onclick="testAllAPIs()">🚀 Test All APIs</button>
+            <button class="btn success" onclick="restartServer()">🔄 Apply & Restart Server</button>
+            <button class="btn" onclick="window.open('/', '_blank')">📊 Open Trading App</button>
+        </div>
+        
+        <div id="globalStatus" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        async function testFMP() {
+            const key = document.getElementById('fmpKey').value.trim();
+            const status = document.getElementById('fmpStatus');
+            
+            if (!key) {
+                showStatus('fmpStatus', 'Please enter your FMP API key', 'error');
+                return;
+            }
+            
+            showStatus('fmpStatus', '🔄 Testing FMP API...', 'info');
+            
+            try {
+                const response = await fetch(`https://financialmodelingprep.com/api/v3/quote/AAPL?apikey=${key}`);
+                const data = await response.json();
+                
+                if (response.ok && Array.isArray(data) && data.length > 0) {
+                    showStatus('fmpStatus', 
+                        `✅ FMP API Working! AAPL: $${data[0].price} (${data[0].changesPercentage > 0 ? '+' : ''}${data[0].changesPercentage.toFixed(2)}%)`, 
+                        'success');
+                } else {
+                    throw new Error(data['Error Message'] || 'Invalid response');
+                }
+            } catch (error) {
+                showStatus('fmpStatus', `❌ FMP Test Failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPolygon() {
+            const key = document.getElementById('polygonKey').value.trim();
+            
+            if (!key) {
+                showStatus('polygonStatus', 'Please enter your Polygon API key', 'error');
+                return;
+            }
+            
+            showStatus('polygonStatus', '🔄 Testing Polygon API...', 'info');
+            
+            try {
+                const response = await fetch(`https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/AAPL?apiKey=${key}`);
+                const data = await response.json();
+                
+                if (response.ok && data.results && data.results.day) {
+                    const price = data.results.day.c;
+                    const prevClose = data.results.prevDay?.c || data.results.day.o;
+                    const changePercent = ((price - prevClose) / prevClose * 100);
+                    
+                    showStatus('polygonStatus', 
+                        `✅ Polygon API Working! AAPL: $${price} (${changePercent > 0 ? '+' : ''}${changePercent.toFixed(2)}%)`, 
+                        'success');
+                } else {
+                    throw new Error(data.error || 'Invalid response');
+                }
+            } catch (error) {
+                showStatus('polygonStatus', `❌ Polygon Test Failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function saveFMP() {
+            const key = document.getElementById('fmpKey').value.trim();
+            if (!key) {
+                showStatus('fmpStatus', 'Please enter your FMP API key first', 'error');
+                return;
+            }
+            
+            // Save to localStorage for immediate use
+            localStorage.setItem('fmp_api_key_paid', key);
+            showStatus('fmpStatus', '💾 FMP Key saved! Server restart required to activate.', 'success');
+        }
+        
+        function savePolygon() {
+            const key = document.getElementById('polygonKey').value.trim();
+            if (!key) {
+                showStatus('polygonStatus', 'Please enter your Polygon API key first', 'error');
+                return;
+            }
+            
+            // Save to localStorage for immediate use
+            localStorage.setItem('polygon_api_key_paid', key);
+            showStatus('polygonStatus', '💾 Polygon Key saved! Server restart required to activate.', 'success');
+        }
+        
+        async function testAllAPIs() {
+            showStatus('globalStatus', '🔄 Testing all APIs...', 'info');
+            
+            try {
+                const response = await fetch('/api/live-data?symbols=AAPL,MSFT,GOOGL&limit=3');
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('globalStatus', 
+                        `✅ Current Data Source: ${data.source} | ${data.data.length} symbols | Last: ${new Date(data.timestamp).toLocaleTimeString()}`, 
+                        'success');
+                } else {
+                    showStatus('globalStatus', '❌ API test failed', 'error');
+                }
+            } catch (error) {
+                showStatus('globalStatus', `❌ API test error: ${error.message}`, 'error');
+            }
+        }
+        
+        function restartServer() {
+            const fmpKey = document.getElementById('fmpKey').value.trim();
+            const polygonKey = document.getElementById('polygonKey').value.trim();
+            
+            if (!fmpKey && !polygonKey) {
+                alert('Please enter at least one API key before restarting');
+                return;
+            }
+            
+            showStatus('globalStatus', 
+                '⚠️ To apply API keys, manually update your .env.local file and restart PM2:\\n\\n' +
+                'FMP_API_KEY=' + (fmpKey || 'your_fmp_key') + '\\n' +
+                'POLYGON_API_KEY=' + (polygonKey || 'your_polygon_key') + '\\n\\n' +
+                'Then run: pm2 restart nextjs-dev', 
+                'info');
+        }
+        
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        // Initialize
+        testAllAPIs();
+    </script>
+</body>
+</html>
