@@ -938,15 +938,15 @@ export default function UltimateScanner() {
       let closePnl, closePnlPercent;
       
       if (trade.assetType === 'MULTI_LEG_OPTION') {
-        // Multi-leg strategies: P&L is net premium difference per contract * contracts
-        // For spreads, premium values are already net of the legs, NO 100x multiplier
+        // Multi-leg strategies: P&L is net premium difference per contract * contracts * 100 shares per contract
+        // FIXED: Option spreads need 100x multiplier like single options
         const isCredit = trade.netPremium > 0;
         if (isCredit) {
-          // Credit spread: P&L = collected credit - cost to close
-          closePnl = (trade.entryPrice - exitPrice) * closeQty;
+          // Credit spread: P&L = (collected credit - cost to close) * contracts * 100
+          closePnl = (trade.entryPrice - exitPrice) * closeQty * 100;
         } else {
-          // Debit spread: P&L = exit value - paid debit  
-          closePnl = (exitPrice - trade.entryPrice) * closeQty;
+          // Debit spread: P&L = (exit value - paid debit) * contracts * 100
+          closePnl = (exitPrice - trade.entryPrice) * closeQty * 100;
         }
       } else if (trade.assetType === 'OPTION') {
         // Single options: Premium is per contract, multiply by 100 shares per contract
@@ -966,7 +966,8 @@ export default function UltimateScanner() {
       
       // Calculate P&L percentage
       if (trade.assetType === 'MULTI_LEG_OPTION') {
-        closePnlPercent = Math.abs(trade.entryPrice) > 0 ? (closePnl / (Math.abs(trade.entryPrice) * closeQty)) * 100 : 0;
+        // FIXED: Multi-leg option percentage calculation needs 100x multiplier consistency
+        closePnlPercent = Math.abs(trade.entryPrice) > 0 ? (closePnl / (Math.abs(trade.entryPrice) * closeQty * 100)) * 100 : 0;
       } else if (trade.assetType === 'OPTION') {
         closePnlPercent = (closePnl / (trade.entryPrice * closeQty * 100)) * 100;
       } else {
