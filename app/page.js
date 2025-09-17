@@ -936,32 +936,39 @@ export default function UltimateScanner() {
       let closePnl, closePnlPercent;
       
       if (trade.assetType === 'MULTI_LEG_OPTION') {
-        // Multi-leg strategies: P&L is difference in net premium * 100 * contracts
-        // For credit spreads: collected premium - exit cost
-        // For debit spreads: exit value - paid premium
+        // Multi-leg strategies: P&L is difference in net premium per contract * contracts
+        // Premium values are already per-contract, just multiply by quantity
         const isCredit = trade.netPremium > 0;
         if (isCredit) {
           // Credit spread: P&L = collected credit - cost to close
-          closePnl = (trade.entryPrice - exitPrice) * closeQty * 100;
+          closePnl = (trade.entryPrice - exitPrice) * closeQty;
         } else {
           // Debit spread: P&L = exit value - paid debit
+          closePnl = (exitPrice - trade.entryPrice) * closeQty;
+        }
+      } else if (trade.assetType === 'OPTION') {
+        // Single options: Premium is per contract, multiply by 100 shares per contract
+        if (trade.type && (trade.type === 'BUY' || trade.type === 'BUY_TO_OPEN')) {
           closePnl = (exitPrice - trade.entryPrice) * closeQty * 100;
+        } else {
+          closePnl = (trade.entryPrice - exitPrice) * closeQty * 100;
         }
       } else {
-        // Single options/stocks: original logic
-        const multiplier = trade.assetType === 'OPTION' ? 100 : 1;
-        if (trade.type && (trade.type === 'BUY' || trade.type === 'BUY_TO_OPEN')) {
-          closePnl = (exitPrice - trade.entryPrice) * closeQty * multiplier;
+        // Stocks: No multiplier needed, price is per share
+        if (trade.type && trade.type === 'BUY') {
+          closePnl = (exitPrice - trade.entryPrice) * closeQty;
         } else {
-          closePnl = (trade.entryPrice - exitPrice) * closeQty * multiplier;
+          closePnl = (trade.entryPrice - exitPrice) * closeQty;
         }
       }
+      
       // Calculate P&L percentage
       if (trade.assetType === 'MULTI_LEG_OPTION') {
+        closePnlPercent = Math.abs(trade.entryPrice) > 0 ? (closePnl / (Math.abs(trade.entryPrice) * closeQty)) * 100 : 0;
+      } else if (trade.assetType === 'OPTION') {
         closePnlPercent = (closePnl / (trade.entryPrice * closeQty * 100)) * 100;
       } else {
-        const multiplier = trade.assetType === 'OPTION' ? 100 : 1;
-        closePnlPercent = (closePnl / (trade.entryPrice * closeQty * multiplier)) * 100;
+        closePnlPercent = (closePnl / (trade.entryPrice * closeQty)) * 100;
       }
       
       let updatedTrades;
